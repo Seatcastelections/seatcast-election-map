@@ -6,19 +6,20 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SeatCast Presidential Map</title>
 
-<link href="https://unpkg.com/maplibre-gl@5.6.2/dist/maplibre-gl.css" rel="stylesheet"/>
+<link href="https://unpkg.com/maplibre-gl@5.6.2/dist/maplibre-gl.css" rel="stylesheet">
 
 <style>
 body {
   margin: 0;
   font-family: Arial, sans-serif;
-  background: #101827;
-  color: white;
+  background: #f4f6fa;
+  color: #17243b;
 }
 
 header {
   padding: 15px 20px;
   background: #17243b;
+  color: white;
   border-bottom: 2px solid #31527e;
 }
 
@@ -37,22 +38,26 @@ header p {
   height: calc(100vh - 85px);
 }
 
-#info {
-  background: #17243b;
+#errorBox {
+  display: none;
+  background: #7f1d1d;
   color: white;
   padding: 12px;
-  border-radius: 8px;
   font-size: 14px;
+  white-space: pre-wrap;
+}
+
+#info {
+  padding: 12px;
+  font-size: 14px;
+  color: #17243b;
 }
 
 .maplibregl-popup-content {
-  background: #17243b;
-  color: white;
   border-radius: 8px;
 }
 
 .maplibregl-popup-close-button {
-  color: white;
   font-size: 18px;
 }
 </style>
@@ -65,18 +70,34 @@ header p {
   <p>Presidential Election County Explorer · 2024</p>
 </header>
 
-<div id="map"></div>
 <div id="errorBox"></div>
-  
+<div id="map"></div>
+
 <script src="https://unpkg.com/maplibre-gl@5.6.2/dist/maplibre-gl.js"></script>
 <script src="https://unpkg.com/topojson-client@3"></script>
 
 <script>
-const map = new maplibregl.Map({
-  container: "map",
-  style: {
-    version: 8,
-  
+
+function showError(message) {
+  const box = document.getElementById("errorBox");
+  box.style.display = "block";
+  box.textContent = "MAP ERROR: " + message;
+}
+
+window.onerror = function(message) {
+  showError(message);
+};
+
+window.addEventListener("unhandledrejection", function(event) {
+  showError(event.reason?.message || String(event.reason));
+});
+
+if (typeof maplibregl === "undefined") {
+  showError("MapLibre failed to load.");
+} else if (typeof topojson === "undefined") {
+  showError("TopoJSON failed to load.");
+} else {
+
 const map = new maplibregl.Map({
   container: "map",
   style: {
@@ -98,101 +119,156 @@ const map = new maplibregl.Map({
 
 map.addControl(new maplibregl.NavigationControl(), "top-right");
 
-map.on("load", async () => {
-  const response = await fetch(
-    "https://cdn.jsdelivr.net/npm/us-atlas@3/counties-10m.json"
-  );
-
-  const topology = await response.json();
-
-  const counties = topojson.feature(
-    topology,
-    topology.objects.counties
-  );
-
-  map.addSource("counties", {
-    type: "geojson",
-    data: counties
-  });
-  
-const electionResponse = await fetch(
-  "./seatcast_2024_presidential_counties.json"
-);
-
-const electionData = await electionResponse.json();
-
-const resultsByFips = {};
-
-electionData.forEach(result => {
-  resultsByFips[result.fips] = result;
+map.on("error", function(event) {
+  showError(event.error?.message || "Map rendering error");
 });
 
-counties.features.forEach(county => {
-  const fips = String(
-    county.id || county.properties.id
-  ).padStart(5, "0");
+map.on("load", async function() {
 
-  const result = resultsByFips[fips];
+  try {
 
-  if (result) {
-    county.properties.winner = result.winner;
-    county.properties.demVotes = result.dem;
-    county.properties.repVotes = result.rep;
-    county.properties.totalVotes = result.total;
-    county.properties.margin = result.margin;
-    county.properties.demPct = result.demPct;
-    county.properties.repPct = result.repPct;
-    county.properties.countyName = result.county;
-    county.properties.state = result.state;
+    // Load county boundaries
+    const boundaryResponse = await fetch(
+      "https://cdn.jsdelivr.net/npm/us-atlas@3/counties-10m.json"
+    );
+
+    if (!boundaryResponse.ok) {
+      throw new Error("Could not load county boundaries.");
+    }
+
+    const topology = await boundaryResponse.json();
+
+    const counties = topojson.feature(
+      topology,
+      topology.objects.counties
+    );
+
+    // Load SeatCast election results
+    const electionResponse = await fetch(
+      "./seatcast_2024_presidential_counties.json"
+    );
+
+    if (!electionResponse.ok) {
+      throw new Error("Could not load SeatCast election data.");
+    }
+
+    const electionData = await electionResponse.json();
+
+    const resultsByFips = {};
+
+    electionData.forEach(result => {
+      resultsByFips[String(result.fips).padStart(5, "0")] = result;
+    });
+
+    // Match election results to county boundaries
+    counties.features.forEach(county => {
+
+      const fips = String(county.id).padStart(5, "0");
+      const result = resultsByFips[fips];
+
+      if (result) {
+        county.properties.winner = result.winner;
+        county.properties.demVotes = result.dem;
+        county.properties.repVotes = result.rep;
+        county.properties.totalVotes = result.total;
+        county.properties.margin = result.margin;
+        county.properties.demPct = result.demPct;
+        county.properties.repPct = result.repPct;
+        county.properties.countyName = result.county;
+        county.properties.state = result.state;
+      }
+    });
+
+    // Add county shapes to map
+    map.addSource("counties", {
+      type: "geojson",
+      data: counties
+    });
+
+    // Color counties by winner
+    map.addLayer({
+      id: "county-fill",
+      type: "fill",
+      source: "counties",
+      paint: {
+        "fill-color": [
+          "case",
+          ["==", ["get", "winner"], "D"], "#2765c5",
+          ["==", ["get", "winner"], "R"], "#d74444",
+          "#dbe3ed"
+        ],
+        "fill-opacity": 0.85
+      }
+    });
+
+    // County borders
+    map.addLayer({
+      id: "county-outline",
+      type: "line",
+      source: "counties",
+      paint: {
+        "line-color": "#ffffff",
+        "line-width": 0.35
+      }
+    });
+
+    // County popup
+    map.on("click", "county-fill", function(event) {
+
+      const p = event.features[0].properties;
+
+      if (!p.winner) {
+        new maplibregl.Popup()
+          .setLngLat(event.lngLat)
+          .setHTML("<div id='info'>No results found for this county.</div>")
+          .addTo(map);
+        return;
+      }
+
+      const winner = p.winner === "D"
+        ? "Democratic"
+        : "Republican";
+
+      const margin = Number(p.margin);
+      const marginText = Math.abs(margin).toLocaleString() +
+        " votes " + (margin > 0 ? "Democratic" : "Republican");
+
+      new maplibregl.Popup()
+        .setLngLat(event.lngLat)
+        .setHTML(`
+          <div id="info">
+            <strong>${p.countyName}, ${p.state}</strong>
+            <hr>
+            <b>2024 Presidential Results</b><br>
+            Winner: ${winner}<br>
+            Democratic: ${Number(p.demVotes).toLocaleString()} (${p.demPct}%)<br>
+            Republican: ${Number(p.repVotes).toLocaleString()} (${p.repPct}%)<br>
+            Total votes: ${Number(p.totalVotes).toLocaleString()}<br>
+            Margin: ${marginText}
+          </div>
+        `)
+        .addTo(map);
+    });
+
+    map.on("mouseenter", "county-fill", function() {
+      map.getCanvas().style.cursor = "pointer";
+    });
+
+    map.on("mouseleave", "county-fill", function() {
+      map.getCanvas().style.cursor = "";
+    });
+
+  } catch (error) {
+    showError(error.message);
   }
-}); 
 
-paint: {
-  "fill-color": [
-    "case",
-    ["==", ["get", "winner"], "D"], "#2765c5",
-    ["==", ["get", "winner"], "R"], "#d74444",
-    "#dbe3ed"
-  ],
-  "fill-opacity": 0.85
+});
+
 }
 
-  map.addLayer({
-    id: "county-outline",
-    type: "line",
-    source: "counties",
-    paint: {
-      "line-color": "#a8b5c7",
-      "line-width": 0.35
-    }
-  });
-
-  map.on("click", "county-fill", (event) => {
-    const county = event.features[0];
-    const fips = String(county.id || county.properties.id)
-      .padStart(5, "0");
-
-    new maplibregl.Popup()
-      .setLngLat(event.lngLat)
-      .setHTML(`
-        <div id="info">
-          <strong>County FIPS: ${fips}</strong><br>
-          Presidential results will appear here.
-        </div>
-      `)
-      .addTo(map);
-  });
-
-  map.on("mouseenter", "county-fill", () => {
-    map.getCanvas().style.cursor = "pointer";
-  });
-
-  map.on("mouseleave", "county-fill", () => {
-    map.getCanvas().style.cursor = "";
-  });
-});
 </script>
 
 </body>
 </html>
+
 
