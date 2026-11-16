@@ -4,61 +4,123 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SeatCast Presidential Map</title>
+<title>SeatCast Historical Presidential Map</title>
 
 <link href="https://unpkg.com/maplibre-gl@5.6.2/dist/maplibre-gl.css" rel="stylesheet">
 
 <style>
+* { box-sizing: border-box; }
+
 body {
   margin: 0;
   font-family: Arial, sans-serif;
-  background: #f4f6fa;
-  color: #17243b;
+  background: #f4f6f9;
+  color: #172033;
 }
 
 header {
-  padding: 15px 20px;
-  background: #17243b;
+  background: #101827;
   color: white;
-  border-bottom: 2px solid #31527e;
+  padding: 18px 22px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 15px;
 }
+
+.brand {
+  font-size: 25px;
+  font-weight: 800;
+  letter-spacing: -1px;
+}
+
+.brand span { color: #4da3ff; }
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+select {
+  padding: 10px 14px;
+  font-size: 15px;
+  border-radius: 7px;
+  border: 1px solid #ccc;
+  background: white;
+  cursor: pointer;
+}
+
+main { padding: 20px; }
 
 h1 {
-  margin: 0;
-  font-size: 24px;
+  margin: 0 0 7px;
+  font-size: 25px;
 }
 
-header p {
-  margin: 6px 0 0;
-  color: #bdcce0;
+.subtitle {
+  color: #667085;
+  margin-bottom: 18px;
 }
 
 #map {
   width: 100%;
-  height: calc(100vh - 85px);
+  height: 650px;
+  background: #e8edf3;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.legend {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  padding: 15px 0;
+  font-size: 14px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.swatch {
+  width: 15px;
+  height: 15px;
+  border-radius: 3px;
+}
+
+#status {
+  padding: 10px;
+  color: #667085;
+  font-size: 13px;
 }
 
 #errorBox {
   display: none;
-  background: #7f1d1d;
-  color: white;
+  background: #fee2e2;
+  color: #991b1b;
   padding: 12px;
-  font-size: 14px;
+  margin: 12px 20px;
+  border-radius: 7px;
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
-#info {
-  padding: 12px;
-  font-size: 14px;
-  color: #17243b;
+footer {
+  padding: 20px;
+  background: #101827;
+  color: #aab4c5;
+  text-align: center;
+  font-size: 13px;
 }
 
-.maplibregl-popup-content {
-  border-radius: 8px;
-}
-
-.maplibregl-popup-close-button {
-  font-size: 18px;
+@media(max-width:650px) {
+  #map { height: 500px; }
+  header { align-items: flex-start; }
+  main { padding: 12px; }
 }
 </style>
 </head>
@@ -66,68 +128,150 @@ header p {
 <body>
 
 <header>
-  <h1>SeatCast</h1>
-  <p>Presidential Election County Explorer · 2024</p>
+  <div class="brand">Seat<span>Cast</span></div>
+
+  <div class="controls">
+    <label for="yearSelect">Election:</label>
+    <select id="yearSelect">
+      <option value="2000">2000</option>
+      <option value="2004">2004</option>
+      <option value="2008">2008</option>
+      <option value="2012">2012</option>
+      <option value="2016">2016</option>
+      <option value="2020">2020</option>
+      <option value="2024" selected>2024</option>
+    </select>
+  </div>
 </header>
 
 <div id="errorBox"></div>
-<div id="map"></div>
+
+<main>
+  <h1 id="mapTitle">2024 Presidential Election</h1>
+  <div class="subtitle">
+    Explore presidential election results by county.
+    Select a county to view its results.
+  </div>
+
+  <div id="map"></div>
+
+  <div class="legend">
+    <div class="legend-item">
+      <div class="swatch" style="background:#2166ac"></div>
+      Democratic
+    </div>
+    <div class="legend-item">
+      <div class="swatch" style="background:#c62828"></div>
+      Republican
+    </div>
+    <div class="legend-item">
+      <div class="swatch" style="background:#d1d5db"></div>
+      No data
+    </div>
+  </div>
+
+  <div id="status">Loading election data...</div>
+</main>
+
+<footer>
+  SeatCast | Independent Election Analysis
+</footer>
 
 <script src="https://unpkg.com/maplibre-gl@5.6.2/dist/maplibre-gl.js"></script>
 <script src="https://unpkg.com/topojson-client@3"></script>
 
 <script>
+const errorBox = document.getElementById("errorBox");
+const statusBox = document.getElementById("status");
 
 function showError(message) {
-  const box = document.getElementById("errorBox");
-  box.style.display = "block";
-  box.textContent = "MAP ERROR: " + message;
+  errorBox.style.display = "block";
+  errorBox.textContent = "ERROR: " + message;
 }
 
-window.onerror = function(message) {
-  showError(message);
-};
-
-window.addEventListener("unhandledrejection", function(event) {
-  showError(event.reason?.message || String(event.reason));
+window.addEventListener("error", event => {
+  showError(event.message);
 });
 
-if (typeof maplibregl === "undefined") {
-  showError("MapLibre failed to load.");
-} else if (typeof topojson === "undefined") {
-  showError("TopoJSON failed to load.");
-} else {
+window.addEventListener("unhandledrejection", event => {
+  showError(String(event.reason));
+});
 
 const map = new maplibregl.Map({
   container: "map",
   style: {
     version: 8,
     sources: {},
-    layers: [
-      {
-        id: "background",
-        type: "background",
-        paint: {
-          "background-color": "#f4f6fa"
-        }
+    layers: [{
+      id: "background",
+      type: "background",
+      paint: {
+        "background-color": "#e8edf3"
       }
-    ]
+    }]
   },
-  center: [-98, 39],
-  zoom: 3.2
+  center: [-96, 38],
+  zoom: 3.3,
+  minZoom: 2,
+  maxZoom: 12
 });
 
 map.addControl(new maplibregl.NavigationControl(), "top-right");
 
-map.on("error", function(event) {
-  showError(event.error?.message || "Map rendering error");
-});
+let counties = null;
+let resultsByYear = {};
+let currentYear = 2024;
 
-map.on("load", async function() {
+function getCountyFips(feature) {
+  return String(feature.id).padStart(5, "0");
+}
 
+function getElectionFips(fips) {
+  // Oglala Lakota County: historical data FIPS 46113,
+  // modern map boundary FIPS 46102.
+  if (fips === "46102") return "46113";
+  return fips;
+}
+
+function updateMapForYear(year) {
+  currentYear = Number(year);
+
+  document.getElementById("mapTitle").textContent =
+    currentYear + " Presidential Election";
+
+  const electionResults = resultsByYear[currentYear] || {};
+
+  counties.features.forEach(feature => {
+    const mapFips = getCountyFips(feature);
+    const dataFips = getElectionFips(mapFips);
+
+    const result = electionResults[dataFips];
+
+    feature.properties.winner = result ? result.winner : "NA";
+    feature.properties.dem = result ? result.dem : null;
+    feature.properties.rep = result ? result.rep : null;
+    feature.properties.total = result ? result.total : null;
+    feature.properties.margin = result ? result.margin : null;
+    feature.properties.demPct = result ? result.demPct : null;
+    feature.properties.repPct = result ? result.repPct : null;
+    feature.properties.countyName = result ? result.county : "";
+    feature.properties.state = result ? result.state : "";
+    feature.properties.electionYear = currentYear;
+  });
+
+  map.getSource("counties").setData(counties);
+
+  statusBox.textContent =
+    "Showing " + currentYear +
+    " presidential results | " +
+    Object.keys(electionResults).length +
+    " county results loaded";
+}
+
+map.on("load", async () => {
   try {
+    statusBox.textContent = "Loading county boundaries...";
 
-    // Load county boundaries
     const boundaryResponse = await fetch(
       "https://cdn.jsdelivr.net/npm/us-atlas@3/counties-10m.json"
     );
@@ -138,71 +282,59 @@ map.on("load", async function() {
 
     const topology = await boundaryResponse.json();
 
-    const counties = topojson.feature(
+    counties = topojson.feature(
       topology,
       topology.objects.counties
     );
 
-    // Load SeatCast election results
-    const electionResponse = await fetch(
-      "./seatcast_2024_presidential_counties.json"
+    statusBox.textContent = "Loading historical election results...";
+
+    const dataResponse = await fetch(
+      "./seatcast_presidential_history_2000_2024.json"
     );
 
-    if (!electionResponse.ok) {
-      throw new Error("Could not load SeatCast election data.");
+    if (!dataResponse.ok) {
+      throw new Error(
+        "Could not load historical JSON. Check that the file is uploaded."
+      );
     }
 
-    const electionData = await electionResponse.json();
+    const electionData = await dataResponse.json();
 
-    const resultsByFips = {};
-
+    // Organize all election results by year and county FIPS.
     electionData.forEach(result => {
-      resultsByFips[String(result.fips).padStart(5, "0")] = result;
-    });
+      const year = Number(result.year);
+      const fips = String(result.fips).padStart(5, "0");
 
-    // Match election results to county boundaries
-    counties.features.forEach(county => {
-
-      const fips = String(county.id).padStart(5, "0");
-const lookupFips = fips === "46102" ? "46113" : fips;
-const result = resultsByFips[lookupFips];
-      
-      if (result) {
-        county.properties.winner = result.winner;
-        county.properties.demVotes = result.dem;
-        county.properties.repVotes = result.rep;
-        county.properties.totalVotes = result.total;
-        county.properties.margin = result.margin;
-        county.properties.demPct = result.demPct;
-        county.properties.repPct = result.repPct;
-        county.properties.countyName = result.county;
-        county.properties.state = result.state;
+      if (!resultsByYear[year]) {
+        resultsByYear[year] = {};
       }
+
+      resultsByYear[year][fips] = result;
     });
 
-    // Add county shapes to map
     map.addSource("counties", {
       type: "geojson",
       data: counties
     });
 
-    // Color counties by winner
     map.addLayer({
       id: "county-fill",
       type: "fill",
       source: "counties",
       paint: {
         "fill-color": [
-          "case",
-          ["==", ["get", "winner"], "D"], "#2765c5",
-          ["==", ["get", "winner"], "R"], "#d74444",
-          "#dbe3ed"
+          "match",
+          ["get", "winner"],
+          "D", "#2166ac",
+          "R", "#c62828",
+          "T", "#bdbdbd",
+          "#d1d5db"
         ],
-        "fill-opacity": 0.85
+        "fill-opacity": 0.88
       }
     });
 
-    // County borders
     map.addLayer({
       id: "county-outline",
       type: "line",
@@ -213,63 +345,83 @@ const result = resultsByFips[lookupFips];
       }
     });
 
+    updateMapForYear(2024);
+
+    document.getElementById("yearSelect")
+      .addEventListener("change", event => {
+        updateMapForYear(event.target.value);
+      });
+
     // County popup
-    map.on("click", "county-fill", function(event) {
+    map.on("click", "county-fill", event => {
+      const feature = event.features[0];
+      const p = feature.properties;
 
-      const p = event.features[0].properties;
-
-      if (!p.winner) {
+      if (!p.dem && !p.rep) {
         new maplibregl.Popup()
           .setLngLat(event.lngLat)
-          .setHTML("<div id='info'>No results found for this county.</div>")
+          .setHTML(
+            "<strong>No election data available</strong>"
+          )
           .addTo(map);
         return;
       }
 
-      const winner = p.winner === "D"
-        ? "Democratic"
-        : "Republican";
-
       const margin = Number(p.margin);
-      const marginText = Math.abs(margin).toLocaleString() +
-        " votes " + (margin > 0 ? "Democratic" : "Republican");
+      const marginText =
+        margin > 0 ? "D+" + margin.toLocaleString() :
+        margin < 0 ? "R+" + Math.abs(margin).toLocaleString() :
+        "Tied";
+
+      const html = `
+        <div style="font-family:Arial;min-width:210px">
+          <strong style="font-size:16px">
+            ${p.countyName || "County"}, ${p.state || ""}
+          </strong>
+          <div style="color:#667085;margin:5px 0 10px">
+            ${p.electionYear} Presidential Election
+          </div>
+
+          <div style="color:#2166ac">
+            Democratic: ${Number(p.dem).toLocaleString()}
+            (${Number(p.demPct).toFixed(2)}%)
+          </div>
+
+          <div style="color:#c62828">
+            Republican: ${Number(p.rep).toLocaleString()}
+            (${Number(p.repPct).toFixed(2)}%)
+          </div>
+
+          <hr>
+
+          <div>Total votes: ${Number(p.total).toLocaleString()}</div>
+          <strong>Margin: ${marginText}</strong>
+        </div>
+      `;
 
       new maplibregl.Popup()
         .setLngLat(event.lngLat)
-        .setHTML(`
-          <div id="info">
-            <strong>${p.countyName}, ${p.state}</strong>
-            <hr>
-            <b>2024 Presidential Results</b><br>
-            Winner: ${winner}<br>
-            Democratic: ${Number(p.demVotes).toLocaleString()} (${p.demPct}%)<br>
-            Republican: ${Number(p.repVotes).toLocaleString()} (${p.repPct}%)<br>
-            Total votes: ${Number(p.totalVotes).toLocaleString()}<br>
-            Margin: ${marginText}
-          </div>
-        `)
+        .setHTML(html)
         .addTo(map);
     });
 
-    map.on("mouseenter", "county-fill", function() {
+    map.on("mouseenter", "county-fill", () => {
       map.getCanvas().style.cursor = "pointer";
     });
 
-    map.on("mouseleave", "county-fill", function() {
+    map.on("mouseleave", "county-fill", () => {
       map.getCanvas().style.cursor = "";
     });
 
   } catch (error) {
     showError(error.message);
+    statusBox.textContent = "Map failed to load.";
   }
-
 });
-
-}
-
 </script>
 
 </body>
 </html>
+
 
 
