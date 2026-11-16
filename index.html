@@ -75,21 +75,19 @@ const map = new maplibregl.Map({
   container: "map",
   style: {
     version: 8,
-    sources: {
-      basemap: {
-        type: "raster",
-        tiles: [
-          "https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png"
-        ],
-        tileSize: 256,
-        attribution: "© OpenStreetMap © CARTO"
-      }
-    },
+  
+const map = new maplibregl.Map({
+  container: "map",
+  style: {
+    version: 8,
+    sources: {},
     layers: [
       {
-        id: "basemap",
-        type: "raster",
-        source: "basemap"
+        id: "background",
+        type: "background",
+        paint: {
+          "background-color": "#f4f6fa"
+        }
       }
     ]
   },
