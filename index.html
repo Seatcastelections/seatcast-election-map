@@ -113,16 +113,48 @@ map.on("load", async () => {
     type: "geojson",
     data: counties
   });
+  
+const electionResponse = await fetch(
+  "./seatcast_2024_presidential_counties.json"
+);
 
-  map.addLayer({
-    id: "county-fill",
-    type: "fill",
-    source: "counties",
-    paint: {
-      "fill-color": "#dbe3ed",
-      "fill-opacity": 0.65
-    }
-  });
+const electionData = await electionResponse.json();
+
+const resultsByFips = {};
+
+electionData.forEach(result => {
+  resultsByFips[result.fips] = result;
+});
+
+counties.features.forEach(county => {
+  const fips = String(
+    county.id || county.properties.id
+  ).padStart(5, "0");
+
+  const result = resultsByFips[fips];
+
+  if (result) {
+    county.properties.winner = result.winner;
+    county.properties.demVotes = result.dem;
+    county.properties.repVotes = result.rep;
+    county.properties.totalVotes = result.total;
+    county.properties.margin = result.margin;
+    county.properties.demPct = result.demPct;
+    county.properties.repPct = result.repPct;
+    county.properties.countyName = result.county;
+    county.properties.state = result.state;
+  }
+}); 
+
+paint: {
+  "fill-color": [
+    "case",
+    ["==", ["get", "winner"], "D"], "#2765c5",
+    ["==", ["get", "winner"], "R"], "#d74444",
+    "#dbe3ed"
+  ],
+  "fill-opacity": 0.85
+}
 
   map.addLayer({
     id: "county-outline",
