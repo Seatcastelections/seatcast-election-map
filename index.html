@@ -1,1 +1,167 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SeatCast Presidential Map</title>
+
+<link href="https://unpkg.com/maplibre-gl@5.6.2/dist/maplibre-gl.css" rel="stylesheet"/>
+
+<style>
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #101827;
+  color: white;
+}
+
+header {
+  padding: 15px 20px;
+  background: #17243b;
+  border-bottom: 2px solid #31527e;
+}
+
+h1 {
+  margin: 0;
+  font-size: 24px;
+}
+
+header p {
+  margin: 6px 0 0;
+  color: #bdcce0;
+}
+
+#map {
+  width: 100%;
+  height: calc(100vh - 85px);
+}
+
+#info {
+  background: #17243b;
+  color: white;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.maplibregl-popup-content {
+  background: #17243b;
+  color: white;
+  border-radius: 8px;
+}
+
+.maplibregl-popup-close-button {
+  color: white;
+  font-size: 18px;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>SeatCast</h1>
+  <p>Presidential Election County Explorer · 2024</p>
+</header>
+
+<div id="map"></div>
+
+<script src="https://unpkg.com/maplibre-gl@5.6.2/dist/maplibre-gl.js"></script>
+<script src="https://unpkg.com/topojson-client@3"></script>
+
+<script>
+const map = new maplibregl.Map({
+  container: "map",
+  style: {
+    version: 8,
+    sources: {
+      basemap: {
+        type: "raster",
+        tiles: [
+          "https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png"
+        ],
+        tileSize: 256,
+        attribution: "© OpenStreetMap © CARTO"
+      }
+    },
+    layers: [
+      {
+        id: "basemap",
+        type: "raster",
+        source: "basemap"
+      }
+    ]
+  },
+  center: [-98, 39],
+  zoom: 3.2
+});
+
+map.addControl(new maplibregl.NavigationControl(), "top-right");
+
+map.on("load", async () => {
+  const response = await fetch(
+    "https://cdn.jsdelivr.net/npm/us-atlas@3/counties-10m.json"
+  );
+
+  const topology = await response.json();
+
+  const counties = topojson.feature(
+    topology,
+    topology.objects.counties
+  );
+
+  map.addSource("counties", {
+    type: "geojson",
+    data: counties
+  });
+
+  map.addLayer({
+    id: "county-fill",
+    type: "fill",
+    source: "counties",
+    paint: {
+      "fill-color": "#334155",
+      "fill-opacity": 0.65
+    }
+  });
+
+  map.addLayer({
+    id: "county-outline",
+    type: "line",
+    source: "counties",
+    paint: {
+      "line-color": "#a8b5c7",
+      "line-width": 0.35
+    }
+  });
+
+  map.on("click", "county-fill", (event) => {
+    const county = event.features[0];
+    const fips = String(county.id || county.properties.id)
+      .padStart(5, "0");
+
+    new maplibregl.Popup()
+      .setLngLat(event.lngLat)
+      .setHTML(`
+        <div id="info">
+          <strong>County FIPS: ${fips}</strong><br>
+          Presidential results will appear here.
+        </div>
+      `)
+      .addTo(map);
+  });
+
+  map.on("mouseenter", "county-fill", () => {
+    map.getCanvas().style.cursor = "pointer";
+  });
+
+  map.on("mouseleave", "county-fill", () => {
+    map.getCanvas().style.cursor = "";
+  });
+});
+</script>
+
+</body>
+</html>
+
