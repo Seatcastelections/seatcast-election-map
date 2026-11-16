@@ -164,8 +164,9 @@ map.on("load", async function() {
     counties.features.forEach(county => {
 
       const fips = String(county.id).padStart(5, "0");
-      const result = resultsByFips[fips];
-
+const lookupFips = fips === "46102" ? "46113" : fips;
+const result = resultsByFips[lookupFips];
+      
       if (result) {
         county.properties.winner = result.winner;
         county.properties.demVotes = result.dem;
