@@ -4,12 +4,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SeatCast Historical Presidential Map</title>
+<title>SeatCast | Presidential Election Maps</title>
 
 <link href="https://unpkg.com/maplibre-gl@5.6.2/dist/maplibre-gl.css" rel="stylesheet">
 
 <style>
-* { box-sizing: border-box; }
+* {
+  box-sizing: border-box;
+}
 
 body {
   margin: 0;
@@ -30,9 +32,13 @@ header {
   letter-spacing: -1px;
 }
 
-.brand span { color: #4da3ff; }
+.brand span {
+  color: #4da3ff;
+}
 
-main { padding: 20px; }
+main {
+  padding: 20px;
+}
 
 h1 {
   margin: 0 0 7px;
@@ -44,6 +50,33 @@ h1 {
   margin-bottom: 18px;
 }
 
+.mode-selector {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.mode-button {
+  padding: 11px 18px;
+  border: 1px solid #cbd5e1;
+  border-radius: 7px;
+  background: white;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.mode-button:hover {
+  background: #e8f1fc;
+}
+
+.mode-button.active {
+  background: #172b4d;
+  color: white;
+  border-color: #172b4d;
+}
+
 #map {
   width: 100%;
   height: 650px;
@@ -52,7 +85,8 @@ h1 {
   overflow: hidden;
 }
 
-.year-bar {
+.year-bar,
+.shift-controls {
   background: white;
   border: 1px solid #dce2ea;
   border-radius: 10px;
@@ -122,6 +156,36 @@ h1 {
   margin-top: 5px;
 }
 
+.shift-controls {
+  display: none;
+}
+
+.shift-controls p {
+  margin: 12px 0;
+}
+
+.shift-controls select {
+  margin: 8px 12px 8px 0;
+  padding: 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 14px;
+  background: white;
+  cursor: pointer;
+}
+
+.shift-select-label {
+  font-weight: bold;
+  display: inline-block;
+  margin-right: 5px;
+}
+
+.shift-description {
+  color: #667085;
+  font-size: 13px;
+  margin-top: 10px;
+}
+
 .legend {
   display: flex;
   gap: 20px;
@@ -140,6 +204,25 @@ h1 {
   width: 15px;
   height: 15px;
   border-radius: 3px;
+}
+
+#resultsLegend {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+#shiftLegend {
+  display: none;
+  gap: 13px;
+  flex-wrap: wrap;
+}
+
+.legend-range {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
 }
 
 #status {
@@ -168,45 +251,21 @@ footer {
 }
 
 @media(max-width:650px) {
-  #map { height: 500px; }
-  main { padding: 12px; }
-  .year-button { padding: 8px 11px; }
-}
-  .mode-selector {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 12px;
-  flex-wrap: wrap;
-}
+  #map {
+    height: 500px;
+  }
 
-.mode-button {
-  padding: 10px 18px;
-  border: 1px solid #cbd5e1;
-  border-radius: 7px;
-  background: white;
-  cursor: pointer;
-  font-weight: bold;
-}
+  main {
+    padding: 12px;
+  }
 
-.mode-button.active {
-  background: #172b4d;
-  color: white;
-  border-color: #172b4d;
-}
-.shift-controls {
-  display: none;
-  background: white;
-  border: 1px solid #dce2ea;
-  border-radius: 10px;
-  padding: 16px;
-  margin-top: 14px;
-}
+  .year-button {
+    padding: 8px 11px;
+  }
 
-.shift-controls select {
-  margin: 8px 12px 8px 0;
-  padding: 9px;
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
+  .shift-controls select {
+    margin-left: 0;
+  }
 }
 </style>
 </head>
@@ -220,29 +279,35 @@ footer {
 <div id="errorBox"></div>
 
 <main>
+
   <h1 id="mapTitle">2024 Presidential Election</h1>
+
   <div class="subtitle">
-    Explore presidential election results by county.
-    Select a county to view its results.
+    Explore presidential election results by county and compare
+    how counties have shifted over time.
   </div>
-  
-<div class="mode-selector">
-  <button id="resultsMode" class="mode-button active">
-    Election Results
-  </button>
-  <button id="shiftMode" class="mode-button">
-    County Shift
-  </button>
-</div>
+
+  <div class="mode-selector">
+    <button id="resultsMode" class="mode-button active">
+      Election Results
+    </button>
+
+    <button id="shiftMode" class="mode-button">
+      County Shift
+    </button>
+  </div>
+
   <div id="map"></div>
 
+  <!-- Historical year controls -->
   <div class="year-bar">
+
     <div class="year-heading">
       <strong>Select an election year</strong>
       <span id="selectedYear">2024</span>
     </div>
 
-    <div class="year-buttons" id="yearButtons">
+    <div class="year-buttons">
       <button class="year-button" data-year="2000">2000</button>
       <button class="year-button" data-year="2004">2004</button>
       <button class="year-button" data-year="2008">2008</button>
@@ -266,24 +331,109 @@ footer {
       <span>2000</span>
       <span>2024</span>
     </div>
+
   </div>
 
+  <!-- County shift controls -->
+  <div class="shift-controls" id="shiftControls">
+
+    <strong>Compare two presidential elections</strong>
+
+    <p>
+      <span class="shift-select-label">From:</span>
+      <select id="fromYear">
+        <option value="2000">2000</option>
+        <option value="2004">2004</option>
+        <option value="2008">2008</option>
+        <option value="2012">2012</option>
+        <option value="2016" selected>2016</option>
+        <option value="2020">2020</option>
+        <option value="2024">2024</option>
+      </select>
+
+      <span class="shift-select-label">To:</span>
+      <select id="toYear">
+        <option value="2000">2000</option>
+        <option value="2004">2004</option>
+        <option value="2008">2008</option>
+        <option value="2012">2012</option>
+        <option value="2016">2016</option>
+        <option value="2020">2020</option>
+        <option value="2024" selected>2024</option>
+      </select>
+    </p>
+
+    <div class="shift-description">
+      Positive shifts mean movement toward Democrats.
+      Negative shifts mean movement toward Republicans.
+      The comparison uses the two-party vote margin.
+    </div>
+
+  </div>
+
+  <!-- Map legends -->
   <div class="legend">
-    <div class="legend-item">
-      <div class="swatch" style="background:#2166ac"></div>
-      Democratic
+
+    <div id="resultsLegend">
+      <div class="legend-item">
+        <div class="swatch" style="background:#2166ac"></div>
+        Democratic
+      </div>
+
+      <div class="legend-item">
+        <div class="swatch" style="background:#c62828"></div>
+        Republican
+      </div>
+
+      <div class="legend-item">
+        <div class="swatch" style="background:#d1d5db"></div>
+        No data
+      </div>
     </div>
-    <div class="legend-item">
-      <div class="swatch" style="background:#c62828"></div>
-      Republican
+
+    <div id="shiftLegend">
+
+      <div class="legend-range">
+        <div class="swatch" style="background:#145a96"></div>
+        D+6 or more
+      </div>
+
+      <div class="legend-range">
+        <div class="swatch" style="background:#5b9bd5"></div>
+        D+3 to D+6
+      </div>
+
+      <div class="legend-range">
+        <div class="swatch" style="background:#b3d4f0"></div>
+        D+1 to D+3
+      </div>
+
+      <div class="legend-range">
+        <div class="swatch" style="background:#d1d5db"></div>
+        Less than 1 point
+      </div>
+
+      <div class="legend-range">
+        <div class="swatch" style="background:#f2b8b5"></div>
+        R+1 to R+3
+      </div>
+
+      <div class="legend-range">
+        <div class="swatch" style="background:#e47770"></div>
+        R+3 to R+6
+      </div>
+
+      <div class="legend-range">
+        <div class="swatch" style="background:#a91e27"></div>
+        R+6 or more
+      </div>
+
     </div>
-    <div class="legend-item">
-      <div class="swatch" style="background:#d1d5db"></div>
-      No data
-    </div>
+
   </div>
 
   <div id="status">Loading election data...</div>
+
 </main>
 
 <footer>
@@ -294,6 +444,7 @@ footer {
 <script src="https://unpkg.com/topojson-client@3"></script>
 
 <script>
+
 const years = [2000, 2004, 2008, 2012, 2016, 2020, 2024];
 
 const errorBox = document.getElementById("errorBox");
@@ -312,17 +463,22 @@ window.addEventListener("unhandledrejection", event => {
   showError(String(event.reason));
 });
 
+// Initialize map.
 const map = new maplibregl.Map({
   container: "map",
+
   style: {
     version: 8,
     sources: {},
     layers: [{
       id: "background",
       type: "background",
-      paint: { "background-color": "#e8edf3" }
+      paint: {
+        "background-color": "#e8edf3"
+      }
     }]
   },
+
   center: [-96, 38],
   zoom: 3.3,
   minZoom: 2,
@@ -334,18 +490,23 @@ map.addControl(new maplibregl.NavigationControl(), "top-right");
 let counties = null;
 let resultsByYear = {};
 let currentYear = 2024;
+let mapMode = "results";
 
+// County FIPS helpers.
 function getCountyFips(feature) {
   return String(feature.id).padStart(5, "0");
 }
 
 function getElectionFips(fips) {
-  // Oglala Lakota County was previously recorded as Shannon County.
+  // Oglala Lakota County historical FIPS correction.
   if (fips === "46102") return "46113";
+
   return fips;
 }
 
+// Update election results map.
 function updateMapForYear(year) {
+
   currentYear = Number(year);
 
   const electionResults = resultsByYear[currentYear] || {};
@@ -366,21 +527,37 @@ function updateMapForYear(year) {
   });
 
   counties.features.forEach(feature => {
-    const mapFips = getCountyFips(feature);
-    const dataFips = getElectionFips(mapFips);
-    const result = electionResults[dataFips];
 
-    feature.properties.winner = result ? result.winner : "NA";
-    feature.properties.dem = result ? result.dem : null;
-    feature.properties.rep = result ? result.rep : null;
-    feature.properties.total = result ? result.total : null;
-    feature.properties.margin = result ? result.margin : null;
-    feature.properties.demPct = result ? result.demPct : null;
-    feature.properties.repPct = result ? result.repPct : null;
-    feature.properties.countyName = result ? result.county : "";
-    feature.properties.state = result ? result.state : "";
-    feature.properties.electionYear = currentYear;
-    feature.properties.mapFips = mapFips;
+    const fips = getCountyFips(feature);
+    const result = electionResults[getElectionFips(fips)];
+
+    const p = feature.properties;
+
+    p.winner = result ? result.winner : "NA";
+
+    p.fillColor =
+      !result ? "#d1d5db" :
+      result.winner === "D" ? "#2166ac" :
+      result.winner === "R" ? "#c62828" :
+      "#bdbdbd";
+
+    p.dem = result ? result.dem : null;
+    p.rep = result ? result.rep : null;
+    p.total = result ? result.total : null;
+    p.demPct = result ? result.demPct : null;
+    p.repPct = result ? result.repPct : null;
+
+    p.margin = result ?
+      result.demPct - result.repPct : null;
+
+    p.countyName = result ? result.county : "";
+    p.state = result ? result.state : "";
+    p.electionYear = currentYear;
+    p.mapFips = fips;
+
+    p.shiftAvailable = false;
+    p.shift = null;
+
   });
 
   map.getSource("counties").setData(counties);
@@ -389,26 +566,184 @@ function updateMapForYear(year) {
     "Showing " + currentYear +
     " presidential results | " +
     Object.keys(electionResults).length +
-    " county records in the data";
+    " county records in the data.";
 }
 
+// Update county shift map.
+function updateMapForShift() {
+
+  const fromYear = Number(
+    document.getElementById("fromYear").value
+  );
+
+  const toYear = Number(
+    document.getElementById("toYear").value
+  );
+
+  const oldResults = resultsByYear[fromYear] || {};
+  const newResults = resultsByYear[toYear] || {};
+
+  document.getElementById("mapTitle").textContent =
+    fromYear + " to " + toYear + " County Shift";
+
+  counties.features.forEach(feature => {
+
+    const fips = getCountyFips(feature);
+    const dataFips = getElectionFips(fips);
+
+    const oldResult = oldResults[dataFips];
+    const newResult = newResults[dataFips];
+
+    const p = feature.properties;
+
+    p.fromYear = fromYear;
+    p.toYear = toYear;
+    p.shift = null;
+    p.shiftAvailable = false;
+
+    if (!oldResult || !newResult) {
+      p.fillColor = "#d1d5db";
+      return;
+    }
+
+    // Democratic two-party margin.
+    const oldMargin =
+      Number(oldResult.demPct) - Number(oldResult.repPct);
+
+    const newMargin =
+      Number(newResult.demPct) - Number(newResult.repPct);
+
+    // Positive = Democratic shift.
+    // Negative = Republican shift.
+    const shift = newMargin - oldMargin;
+
+    p.shift = shift;
+    p.shiftAvailable = true;
+
+    // Newer election results for county popup.
+    p.dem = newResult.dem;
+    p.rep = newResult.rep;
+    p.total = newResult.total;
+    p.demPct = newResult.demPct;
+    p.repPct = newResult.repPct;
+    p.countyName = newResult.county;
+    p.state = newResult.state;
+    p.margin = newMargin;
+    p.mapFips = fips;
+
+    // Assign shift colors.
+    if (Math.abs(shift) < 1) {
+      p.fillColor = "#d1d5db";
+    }
+
+    // Democratic movement.
+    else if (shift >= 1 && shift < 3) {
+      p.fillColor = "#b3d4f0";
+    }
+    else if (shift >= 3 && shift < 6) {
+      p.fillColor = "#5b9bd5";
+    }
+    else if (shift >= 6) {
+      p.fillColor = "#145a96";
+    }
+
+    // Republican movement.
+    else if (shift <= -1 && shift > -3) {
+      p.fillColor = "#f2b8b5";
+    }
+    else if (shift <= -3 && shift > -6) {
+      p.fillColor = "#e47770";
+    }
+    else if (shift <= -6) {
+      p.fillColor = "#a91e27";
+    }
+
+  });
+
+  map.getSource("counties").setData(counties);
+
+  statusBox.textContent =
+    "Showing county shifts from " + fromYear +
+    " to " + toYear +
+    ". Positive shifts indicate movement toward Democrats.";
+}
+
+// Change election year.
 function selectYear(year) {
+  showMapMode("results");
   updateMapForYear(year);
 }
 
+// Switch map modes.
+function showMapMode(mode) {
+
+  mapMode = mode;
+
+  document.getElementById("resultsMode")
+    .classList.toggle("active", mode === "results");
+
+  document.getElementById("shiftMode")
+    .classList.toggle("active", mode === "shift");
+
+  document.querySelector(".year-bar").style.display =
+    mode === "results" ? "block" : "none";
+
+  document.getElementById("shiftControls").style.display =
+    mode === "shift" ? "block" : "none";
+
+  document.getElementById("resultsLegend").style.display =
+    mode === "results" ? "flex" : "none";
+
+  document.getElementById("shiftLegend").style.display =
+    mode === "shift" ? "flex" : "none";
+
+  if (!counties) return;
+
+  if (mode === "shift") {
+    updateMapForShift();
+  } else {
+    updateMapForYear(currentYear);
+  }
+}
+
+// Button events.
 document.querySelectorAll(".year-button").forEach(button => {
   button.addEventListener("click", () => {
     selectYear(Number(button.dataset.year));
   });
 });
 
-document.getElementById("yearSlider").addEventListener("input", event => {
-  selectYear(years[Number(event.target.value)]);
-});
+document.getElementById("yearSlider")
+  .addEventListener("input", event => {
+    selectYear(years[Number(event.target.value)]);
+  });
 
+document.getElementById("resultsMode")
+  .addEventListener("click", () => {
+    showMapMode("results");
+  });
+
+document.getElementById("shiftMode")
+  .addEventListener("click", () => {
+    showMapMode("shift");
+  });
+
+document.getElementById("fromYear")
+  .addEventListener("change", () => {
+    if (mapMode === "shift") updateMapForShift();
+  });
+
+document.getElementById("toYear")
+  .addEventListener("change", () => {
+    if (mapMode === "shift") updateMapForShift();
+  });
+
+// Load map and election data.
 map.on("load", async () => {
+
   try {
-    statusBox.textContent = "Loading county and state boundaries...";
+
+    statusBox.textContent = "Loading county boundaries...";
 
     const boundaryResponse = await fetch(
       "https://cdn.jsdelivr.net/npm/us-atlas@3/counties-10m.json"
@@ -425,7 +760,7 @@ map.on("load", async () => {
       topology.objects.counties
     );
 
-    // Create state borders from the state boundary geometry.
+    // Create state border geometry.
     const stateBorders = topojson.mesh(
       topology,
       topology.objects.states,
@@ -446,7 +781,9 @@ map.on("load", async () => {
 
     const electionData = await dataResponse.json();
 
+    // Organize election records by year and county FIPS.
     electionData.forEach(result => {
+
       const year = Number(result.year);
       const fips = String(result.fips).padStart(5, "0");
 
@@ -455,31 +792,27 @@ map.on("load", async () => {
       }
 
       resultsByYear[year][fips] = result;
+
     });
 
+    // County source.
     map.addSource("counties", {
       type: "geojson",
       data: counties
     });
 
+    // County colors.
     map.addLayer({
       id: "county-fill",
       type: "fill",
       source: "counties",
       paint: {
-        "fill-color": [
-          "match",
-          ["get", "winner"],
-          "D", "#2166ac",
-          "R", "#c62828",
-          "T", "#bdbdbd",
-          "#d1d5db"
-        ],
+        "fill-color": ["get", "fillColor"],
         "fill-opacity": 0.9
       }
     });
 
-    // Thin white lines between counties.
+    // Thin county borders.
     map.addLayer({
       id: "county-outline",
       type: "line",
@@ -490,7 +823,7 @@ map.on("load", async () => {
       }
     });
 
-    // Stronger dark outlines around each state.
+    // State borders.
     map.addSource("state-borders", {
       type: "geojson",
       data: {
@@ -517,12 +850,97 @@ map.on("load", async () => {
       }
     });
 
+    // Initial election year.
     updateMapForYear(2024);
 
+    statusBox.textContent =
+      "Historical election map loaded successfully.";
+
+    // County click popup.
     map.on("click", "county-fill", event => {
+
       const p = event.features[0].properties;
 
+      // Shift mode popup.
+      if (mapMode === "shift") {
+
+        if (!p.shiftAvailable) {
+
+          new maplibregl.Popup()
+            .setLngLat(event.lngLat)
+            .setHTML(`
+              <strong>No matching historical data found.</strong>
+              <br><br>
+              Map FIPS: ${p.mapFips}
+              <br>
+              Comparison: ${p.fromYear} to ${p.toYear}
+            `)
+            .addTo(map);
+
+          return;
+        }
+
+        const direction =
+          p.shift > 0 ? "toward Democrats" :
+          p.shift < 0 ? "toward Republicans" :
+          "No change";
+
+        const startingMargin = p.margin - p.shift;
+
+        const startingText =
+          startingMargin > 0 ? "D+" :
+          startingMargin < 0 ? "R+" : "Tied";
+
+        const endingText =
+          p.margin > 0 ? "D+" :
+          p.margin < 0 ? "R+" : "Tied";
+
+        const html = `
+          <div style="font-family:Arial;min-width:220px">
+
+            <strong style="font-size:16px">
+              ${p.countyName}, ${p.state}
+            </strong>
+
+            <div style="color:#667085;margin:5px 0 10px">
+              ${p.fromYear} to ${p.toYear}
+            </div>
+
+            <div>
+              Shift:
+              <strong>${Math.abs(p.shift).toFixed(2)} points</strong>
+            </div>
+
+            <div>${direction}</div>
+
+            <hr>
+
+            <div>
+              Starting margin:
+              ${startingText}
+              ${Math.abs(startingMargin).toFixed(2)}
+            </div>
+
+            <div>
+              Ending margin:
+              ${endingText}
+              ${Math.abs(p.margin).toFixed(2)}
+            </div>
+
+          </div>
+        `;
+
+        new maplibregl.Popup()
+          .setLngLat(event.lngLat)
+          .setHTML(html)
+          .addTo(map);
+
+        return;
+      }
+
+      // Election results popup.
       if (p.dem === null || p.rep === null) {
+
         new maplibregl.Popup()
           .setLngLat(event.lngLat)
           .setHTML(`
@@ -533,18 +951,20 @@ map.on("load", async () => {
             Election year: ${p.electionYear}
           `)
           .addTo(map);
+
         return;
       }
 
       const margin = Number(p.margin);
 
       const marginText =
-        margin > 0 ? "D+" + margin.toLocaleString() :
-        margin < 0 ? "R+" + Math.abs(margin).toLocaleString() :
+        margin > 0 ? "D+" + margin.toFixed(2) :
+        margin < 0 ? "R+" + Math.abs(margin).toFixed(2) :
         "Tied";
 
       const html = `
-        <div style="font-family:Arial;min-width:210px">
+        <div style="font-family:Arial;min-width:220px">
+
           <strong style="font-size:16px">
             ${p.countyName || "County"}, ${p.state || ""}
           </strong>
@@ -554,19 +974,26 @@ map.on("load", async () => {
           </div>
 
           <div style="color:#2166ac">
-            Democratic: ${Number(p.dem).toLocaleString()}
+            Democratic:
+            ${Number(p.dem).toLocaleString()}
             (${Number(p.demPct).toFixed(2)}%)
           </div>
 
           <div style="color:#c62828">
-            Republican: ${Number(p.rep).toLocaleString()}
+            Republican:
+            ${Number(p.rep).toLocaleString()}
             (${Number(p.repPct).toFixed(2)}%)
           </div>
 
           <hr>
 
-          <div>Total votes: ${Number(p.total).toLocaleString()}</div>
+          <div>
+            Total votes:
+            ${Number(p.total).toLocaleString()}
+          </div>
+
           <strong>Margin: ${marginText}</strong>
+
         </div>
       `;
 
@@ -574,6 +1001,7 @@ map.on("load", async () => {
         .setLngLat(event.lngLat)
         .setHTML(html)
         .addTo(map);
+
     });
 
     map.on("mouseenter", "county-fill", () => {
@@ -585,12 +1013,17 @@ map.on("load", async () => {
     });
 
   } catch (error) {
+
     showError(error.message);
     statusBox.textContent = "Map failed to load.";
+
   }
+
 });
+
 </script>
 
 </body>
 </html>
+
 
