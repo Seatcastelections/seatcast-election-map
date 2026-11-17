@@ -22,35 +22,15 @@ header {
   background: #101827;
   color: white;
   padding: 18px 22px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 15px;
 }
 
 .brand {
-  font-size: 25px;
+  font-size: 27px;
   font-weight: 800;
   letter-spacing: -1px;
 }
 
 .brand span { color: #4da3ff; }
-
-.controls {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-select {
-  padding: 10px 14px;
-  font-size: 15px;
-  border-radius: 7px;
-  border: 1px solid #ccc;
-  background: white;
-  cursor: pointer;
-}
 
 main { padding: 20px; }
 
@@ -72,11 +52,81 @@ h1 {
   overflow: hidden;
 }
 
+.year-bar {
+  background: white;
+  border: 1px solid #dce2ea;
+  border-radius: 10px;
+  padding: 16px;
+  margin-top: 14px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.year-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.year-heading strong {
+  font-size: 17px;
+}
+
+#selectedYear {
+  color: #2166ac;
+  font-weight: 800;
+  font-size: 20px;
+}
+
+.year-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.year-button {
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #263449;
+  padding: 9px 15px;
+  border-radius: 7px;
+  font-weight: 700;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.year-button:hover {
+  background: #e8f1fc;
+}
+
+.year-button.active {
+  background: #172b4d;
+  border-color: #172b4d;
+  color: white;
+}
+
+#yearSlider {
+  width: 100%;
+  cursor: pointer;
+  accent-color: #2166ac;
+}
+
+.slider-labels {
+  display: flex;
+  justify-content: space-between;
+  color: #667085;
+  font-size: 12px;
+  margin-top: 5px;
+}
+
 .legend {
   display: flex;
   gap: 20px;
   flex-wrap: wrap;
-  padding: 15px 0;
+  padding: 16px 0;
   font-size: 14px;
 }
 
@@ -93,7 +143,7 @@ h1 {
 }
 
 #status {
-  padding: 10px;
+  padding: 8px 0;
   color: #667085;
   font-size: 13px;
 }
@@ -119,8 +169,8 @@ footer {
 
 @media(max-width:650px) {
   #map { height: 500px; }
-  header { align-items: flex-start; }
   main { padding: 12px; }
+  .year-button { padding: 8px 11px; }
 }
 </style>
 </head>
@@ -129,19 +179,6 @@ footer {
 
 <header>
   <div class="brand">Seat<span>Cast</span></div>
-
-  <div class="controls">
-    <label for="yearSelect">Election:</label>
-    <select id="yearSelect">
-      <option value="2000">2000</option>
-      <option value="2004">2004</option>
-      <option value="2008">2008</option>
-      <option value="2012">2012</option>
-      <option value="2016">2016</option>
-      <option value="2020">2020</option>
-      <option value="2024" selected>2024</option>
-    </select>
-  </div>
 </header>
 
 <div id="errorBox"></div>
@@ -154,6 +191,38 @@ footer {
   </div>
 
   <div id="map"></div>
+
+  <div class="year-bar">
+    <div class="year-heading">
+      <strong>Select an election year</strong>
+      <span id="selectedYear">2024</span>
+    </div>
+
+    <div class="year-buttons" id="yearButtons">
+      <button class="year-button" data-year="2000">2000</button>
+      <button class="year-button" data-year="2004">2004</button>
+      <button class="year-button" data-year="2008">2008</button>
+      <button class="year-button" data-year="2012">2012</button>
+      <button class="year-button" data-year="2016">2016</button>
+      <button class="year-button" data-year="2020">2020</button>
+      <button class="year-button active" data-year="2024">2024</button>
+    </div>
+
+    <input
+      type="range"
+      id="yearSlider"
+      min="0"
+      max="6"
+      step="1"
+      value="6"
+      aria-label="Select election year"
+    >
+
+    <div class="slider-labels">
+      <span>2000</span>
+      <span>2024</span>
+    </div>
+  </div>
 
   <div class="legend">
     <div class="legend-item">
@@ -181,6 +250,8 @@ footer {
 <script src="https://unpkg.com/topojson-client@3"></script>
 
 <script>
+const years = [2000, 2004, 2008, 2012, 2016, 2020, 2024];
+
 const errorBox = document.getElementById("errorBox");
 const statusBox = document.getElementById("status");
 
@@ -205,9 +276,7 @@ const map = new maplibregl.Map({
     layers: [{
       id: "background",
       type: "background",
-      paint: {
-        "background-color": "#e8edf3"
-      }
+      paint: { "background-color": "#e8edf3" }
     }]
   },
   center: [-96, 38],
@@ -227,8 +296,7 @@ function getCountyFips(feature) {
 }
 
 function getElectionFips(fips) {
-  // Oglala Lakota County: historical data FIPS 46113,
-  // modern map boundary FIPS 46102.
+  // Oglala Lakota County was previously recorded as Shannon County.
   if (fips === "46102") return "46113";
   return fips;
 }
@@ -236,15 +304,26 @@ function getElectionFips(fips) {
 function updateMapForYear(year) {
   currentYear = Number(year);
 
+  const electionResults = resultsByYear[currentYear] || {};
+
   document.getElementById("mapTitle").textContent =
     currentYear + " Presidential Election";
 
-  const electionResults = resultsByYear[currentYear] || {};
+  document.getElementById("selectedYear").textContent = currentYear;
+
+  document.getElementById("yearSlider").value =
+    years.indexOf(currentYear);
+
+  document.querySelectorAll(".year-button").forEach(button => {
+    button.classList.toggle(
+      "active",
+      Number(button.dataset.year) === currentYear
+    );
+  });
 
   counties.features.forEach(feature => {
     const mapFips = getCountyFips(feature);
     const dataFips = getElectionFips(mapFips);
-
     const result = electionResults[dataFips];
 
     feature.properties.winner = result ? result.winner : "NA";
@@ -257,6 +336,7 @@ function updateMapForYear(year) {
     feature.properties.countyName = result ? result.county : "";
     feature.properties.state = result ? result.state : "";
     feature.properties.electionYear = currentYear;
+    feature.properties.mapFips = mapFips;
   });
 
   map.getSource("counties").setData(counties);
@@ -265,12 +345,26 @@ function updateMapForYear(year) {
     "Showing " + currentYear +
     " presidential results | " +
     Object.keys(electionResults).length +
-    " county results loaded";
+    " county records in the data";
 }
+
+function selectYear(year) {
+  updateMapForYear(year);
+}
+
+document.querySelectorAll(".year-button").forEach(button => {
+  button.addEventListener("click", () => {
+    selectYear(Number(button.dataset.year));
+  });
+});
+
+document.getElementById("yearSlider").addEventListener("input", event => {
+  selectYear(years[Number(event.target.value)]);
+});
 
 map.on("load", async () => {
   try {
-    statusBox.textContent = "Loading county boundaries...";
+    statusBox.textContent = "Loading county and state boundaries...";
 
     const boundaryResponse = await fetch(
       "https://cdn.jsdelivr.net/npm/us-atlas@3/counties-10m.json"
@@ -287,6 +381,13 @@ map.on("load", async () => {
       topology.objects.counties
     );
 
+    // Create state borders from the state boundary geometry.
+    const stateBorders = topojson.mesh(
+      topology,
+      topology.objects.states,
+      (a, b) => a !== b
+    );
+
     statusBox.textContent = "Loading historical election results...";
 
     const dataResponse = await fetch(
@@ -301,7 +402,6 @@ map.on("load", async () => {
 
     const electionData = await dataResponse.json();
 
-    // Organize all election results by year and county FIPS.
     electionData.forEach(result => {
       const year = Number(result.year);
       const fips = String(result.fips).padStart(5, "0");
@@ -331,10 +431,11 @@ map.on("load", async () => {
           "T", "#bdbdbd",
           "#d1d5db"
         ],
-        "fill-opacity": 0.88
+        "fill-opacity": 0.9
       }
     });
 
+    // Thin white lines between counties.
     map.addLayer({
       id: "county-outline",
       type: "line",
@@ -345,29 +446,54 @@ map.on("load", async () => {
       }
     });
 
+    // Stronger dark outlines around each state.
+    map.addSource("state-borders", {
+      type: "geojson",
+      data: {
+        type: "Feature",
+        geometry: stateBorders,
+        properties: {}
+      }
+    });
+
+    map.addLayer({
+      id: "state-outline",
+      type: "line",
+      source: "state-borders",
+      paint: {
+        "line-color": "#263449",
+        "line-width": [
+          "interpolate",
+          ["linear"],
+          ["zoom"],
+          2, 0.8,
+          5, 1.5,
+          8, 2
+        ]
+      }
+    });
+
     updateMapForYear(2024);
 
-    document.getElementById("yearSelect")
-      .addEventListener("change", event => {
-        updateMapForYear(event.target.value);
-      });
-
-    // County popup
     map.on("click", "county-fill", event => {
-      const feature = event.features[0];
-      const p = feature.properties;
+      const p = event.features[0].properties;
 
-      if (!p.dem && !p.rep) {
+      if (p.dem === null || p.rep === null) {
         new maplibregl.Popup()
           .setLngLat(event.lngLat)
-          .setHTML(
-            "<strong>No election data available</strong>"
-          )
+          .setHTML(`
+            <strong>No election data found for this county.</strong>
+            <br><br>
+            Map FIPS: ${p.mapFips}
+            <br>
+            Election year: ${p.electionYear}
+          `)
           .addTo(map);
         return;
       }
 
       const margin = Number(p.margin);
+
       const marginText =
         margin > 0 ? "D+" + margin.toLocaleString() :
         margin < 0 ? "R+" + Math.abs(margin).toLocaleString() :
@@ -378,6 +504,7 @@ map.on("load", async () => {
           <strong style="font-size:16px">
             ${p.countyName || "County"}, ${p.state || ""}
           </strong>
+
           <div style="color:#667085;margin:5px 0 10px">
             ${p.electionYear} Presidential Election
           </div>
@@ -422,6 +549,4 @@ map.on("load", async () => {
 
 </body>
 </html>
-
-
 
