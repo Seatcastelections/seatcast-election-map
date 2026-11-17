@@ -172,6 +172,42 @@ footer {
   main { padding: 12px; }
   .year-button { padding: 8px 11px; }
 }
+  .mode-selector {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.mode-button {
+  padding: 10px 18px;
+  border: 1px solid #cbd5e1;
+  border-radius: 7px;
+  background: white;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.mode-button.active {
+  background: #172b4d;
+  color: white;
+  border-color: #172b4d;
+}
+.shift-controls {
+  display: none;
+  background: white;
+  border: 1px solid #dce2ea;
+  border-radius: 10px;
+  padding: 16px;
+  margin-top: 14px;
+}
+
+.shift-controls select {
+  margin: 8px 12px 8px 0;
+  padding: 9px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+}
 </style>
 </head>
 
@@ -189,7 +225,15 @@ footer {
     Explore presidential election results by county.
     Select a county to view its results.
   </div>
-
+  
+<div class="mode-selector">
+  <button id="resultsMode" class="mode-button active">
+    Election Results
+  </button>
+  <button id="shiftMode" class="mode-button">
+    County Shift
+  </button>
+</div>
   <div id="map"></div>
 
   <div class="year-bar">
