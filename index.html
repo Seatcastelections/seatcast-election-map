@@ -17,13 +17,65 @@ h1 { margin:0 0 7px; font-size:25px; }
 .subtitle { color:#667085; margin-bottom:16px; }
 
 .top-controls { display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:12px; flex-wrap:wrap; }
-.mode-selector { display:flex; gap:10px; flex-wrap:wrap; }
-.mode-button { padding:11px 18px; border:1px solid #cbd5e1; border-radius:7px; background:white; cursor:pointer; font-weight:bold; font-size:14px; }
+.mode-selector, .action-buttons { display:flex; gap:8px; flex-wrap:wrap; }
+.mode-button { padding:11px 16px; border:1px solid #cbd5e1; border-radius:7px; background:white; cursor:pointer; font-weight:bold; font-size:14px; }
 .mode-button:hover { background:#e8f1fc; }
 .mode-button.active { background:#172b4d; color:white; border-color:#172b4d; }
 
-#shareButton { padding:10px 15px; border:1px solid #cbd5e1; border-radius:7px; background:white; color:#172b4d; font-weight:700; font-size:13px; cursor:pointer; }
-#shareButton:hover { background:#e8f1fc; }
+.action-btn { padding:10px 14px; border:1px solid #cbd5e1; border-radius:7px; background:white; color:#172b4d; font-weight:700; font-size:13px; cursor:pointer; }
+.action-btn:hover { background:#e8f1fc; }
+
+/* Electoral College Bar */
+.ec-card {
+  background:white;
+  border:1px solid #dce2ea;
+  border-radius:10px;
+  padding:14px 16px;
+  margin-bottom:12px;
+  box-shadow:0 2px 6px rgba(0,0,0,.04);
+}
+.ec-header {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-bottom:8px;
+  font-size:14px;
+}
+.ec-dem-score { color:#2166ac; font-weight:800; font-size:18px; }
+.ec-rep-score { color:#c62828; font-weight:800; font-size:18px; }
+.ec-center-info { color:#475467; font-size:12.5px; text-align:center; }
+.ec-bar-track {
+  position:relative;
+  width:100%;
+  height:18px;
+  background:#e2e8f0;
+  border-radius:9px;
+  overflow:hidden;
+  display:flex;
+  justify-content:space-between;
+}
+.ec-bar-dem { height:100%; background:#2166ac; transition:width 0.25s ease; }
+.ec-bar-rep { height:100%; background:#c62828; transition:width 0.25s ease; }
+.ec-270-line {
+  position:absolute;
+  left:50%;
+  top:0;
+  bottom:0;
+  width:2px;
+  background:#101827;
+  z-index:2;
+}
+.ec-footer {
+  display:flex;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-top:7px;
+  font-size:12px;
+  color:#667085;
+}
 
 /* Summary Scoreboard */
 .summary-bar {
@@ -44,6 +96,7 @@ h1 { margin:0 0 7px; font-size:25px; }
 .summary-sub { font-size:12px; color:#667085; margin-top:2px; }
 .text-dem { color:#2166ac; }
 .text-rep { color:#c62828; }
+.text-green { color:#15803d; }
 
 /* Map & Floating Controls */
 .map-wrapper { position:relative; width:100%; border-radius:10px; overflow:hidden; border:1px solid #dce2ea; }
@@ -57,9 +110,10 @@ h1 { margin:0 0 7px; font-size:25px; }
   display:flex;
   gap:6px;
   flex-wrap:wrap;
+  align-items:center;
 }
-.map-nav-btn {
-  padding:8px 12px;
+.map-nav-btn, .map-highlight-select {
+  padding:8px 11px;
   border:1px solid #cbd5e1;
   border-radius:7px;
   background:white;
@@ -85,17 +139,20 @@ h1 { margin:0 0 7px; font-size:25px; }
   font-size:13px;
   line-height:1.4;
   box-shadow:0 4px 12px rgba(0,0,0,0.2);
-  max-width:250px;
+  max-width:260px;
 }
 #hoverTooltip .tt-title { font-weight:700; font-size:13.5px; }
 #hoverTooltip .tt-stat { margin-top:2px; font-weight:700; }
 #hoverTooltip .tt-dem { color:#7cc0ff; }
 #hoverTooltip .tt-rep { color:#ff8a8a; }
+#hoverTooltip .tt-green { color:#86efac; }
+#hoverTooltip .tt-amber { color:#fcd34d; }
 #hoverTooltip .tt-neutral { color:#d1d5db; }
+#hoverTooltip .tt-badge { color:#fde047; font-size:11px; margin-top:2px; font-weight:700; }
 #hoverTooltip .tt-hint { color:#94a3b8; font-size:11px; margin-top:3px; }
 
 /* Year, NPV Simulator & Custom Margin Controls */
-.year-bar,.shift-controls,.control-card { background:white; border:1px solid #dce2ea; border-radius:10px; padding:16px; margin-top:14px; box-shadow:0 2px 8px rgba(0,0,0,.05); }
+.year-bar,.compare-controls,.control-card { background:white; border:1px solid #dce2ea; border-radius:10px; padding:16px; margin-top:14px; box-shadow:0 2px 8px rgba(0,0,0,.05); }
 .year-heading { display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:12px; }
 .year-heading-left { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
 .year-heading strong { font-size:17px; }
@@ -209,23 +266,37 @@ h1 { margin:0 0 7px; font-size:25px; }
   line-height:1.4;
 }
 
-.shift-controls { display:none; }
-.shift-controls p { margin:12px 0; }
-.shift-controls select { margin:8px 12px 8px 0; padding:10px; border:1px solid #cbd5e1; border-radius:6px; font-size:14px; background:white; cursor:pointer; }
-.shift-select-label { font-weight:bold; display:inline-block; margin-right:5px; }
-.shift-description { color:#667085; font-size:13px; margin-top:10px; }
+.compare-controls { display:none; }
+.compare-controls p { margin:12px 0; }
+.compare-controls select { margin:8px 12px 8px 0; padding:10px; border:1px solid #cbd5e1; border-radius:6px; font-size:14px; background:white; cursor:pointer; }
+.compare-select-label { font-weight:bold; display:inline-block; margin-right:5px; }
+.compare-description { color:#667085; font-size:13px; margin-top:10px; }
 
 /* Legends */
 .legend { display:flex; gap:20px; flex-wrap:wrap; padding:14px 0 8px; font-size:13px; }
 .legend-item, .legend-range { display:flex; align-items:center; gap:6px; }
 .swatch { width:15px; height:15px; border-radius:3px; border:1px solid rgba(0,0,0,0.08); }
 #resultsLegend { display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
-#shiftLegend { display:none; gap:13px; flex-wrap:wrap; align-items:center; }
+#shiftLegend, #turnoutLegend { display:none; gap:13px; flex-wrap:wrap; align-items:center; }
 #status { padding:6px 0; color:#667085; font-size:13px; }
+
+/* Head-to-Head County Comparison Panel */
+.h2h-panel { background:white; border:1px solid #dce2ea; border-radius:10px; padding:16px; margin-top:14px; box-shadow:0 2px 8px rgba(0,0,0,.05); }
+.h2h-grid { display:grid; grid-template-columns:1fr 1fr auto; gap:10px; align-items:end; margin-top:10px; }
+#h2hCompareBtn { padding:10px 16px; border:1px solid #172b4d; border-radius:6px; background:#172b4d; color:white; font-weight:700; font-size:14px; cursor:pointer; }
+#h2hCompareBtn:hover { background:#223e6d; }
+#h2hResult { display:none; margin-top:16px; padding-top:14px; border-top:1px solid #e5eaf0; }
+.h2h-layout { display:grid; grid-template-columns:1.2fr 1fr; gap:16px; align-items:center; }
+.h2h-chart-box { background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:12px; }
+.h2h-legend { display:flex; gap:16px; font-size:12.5px; font-weight:700; margin-bottom:8px; flex-wrap:wrap; }
+.h2h-dot { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:5px; }
+.h2h-table { width:100%; border-collapse:collapse; font-size:13px; }
+.h2h-table th, .h2h-table td { padding:8px; border-bottom:1px solid #e5eaf0; text-align:left; }
+.h2h-table th { color:#667085; font-weight:700; }
 
 /* Explorer & Rankings */
 .explorer-panel { background:white; border:1px solid #dce2ea; border-radius:10px; padding:16px; margin-top:14px; box-shadow:0 2px 8px rgba(0,0,0,.05); }
-.explorer-grid { display:grid; grid-template-columns:minmax(200px,1.2fr) minmax(160px,0.9fr) minmax(180px,1fr) auto; gap:10px; align-items:end; margin-top:12px; }
+.explorer-grid { display:grid; grid-template-columns:minmax(180px,1.1fr) minmax(150px,0.85fr) minmax(150px,0.85fr) minmax(175px,1fr) auto; gap:10px; align-items:end; margin-top:12px; }
 .explorer-field label { display:block; font-weight:700; font-size:13px; margin-bottom:6px; }
 .explorer-field input,.explorer-field select,#countySearchButton { width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:6px; background:white; font-size:14px; }
 #countySearchButton { background:#172b4d; color:white; font-weight:700; cursor:pointer; }
@@ -233,9 +304,10 @@ h1 { margin:0 0 7px; font-size:25px; }
 #searchMessage { color:#667085; font-size:13px; margin-top:8px; min-height:16px; }
 .ranking-heading { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin:18px 0 10px; }
 .ranking-heading h2 { margin:0; font-size:18px; }
+.ranking-actions { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
 #rankingCount { color:#667085; font-size:13px; }
 .table-wrap { overflow-x:auto; }
-#countyRanking { width:100%; border-collapse:collapse; font-size:13px; min-width:570px; }
+#countyRanking { width:100%; border-collapse:collapse; font-size:13px; min-width:640px; }
 #countyRanking th,#countyRanking td { padding:10px 9px; border-bottom:1px solid #e5eaf0; text-align:left; white-space:nowrap; }
 #countyRanking th { background:#f8fafc; color:#475467; }
 #countyRanking tbody tr { cursor:pointer; transition:background 0.15s ease; }
@@ -243,6 +315,8 @@ h1 { margin:0 0 7px; font-size:25px; }
 .rank-number { color:#667085; }
 .party-dem { color:#2166ac; font-weight:700; }
 .party-rep { color:#c62828; font-weight:700; }
+.streak-pill { display:inline-block; padding:2px 7px; border-radius:99px; font-size:11px; font-weight:700; background:#fef3c7; color:#92400e; }
+.streak-pill.swing { background:#e0f2fe; color:#075985; }
 .table-note { color:#667085; font-size:12px; margin-top:8px; }
 
 /* Popup History Chart */
@@ -261,20 +335,23 @@ h1 { margin:0 0 7px; font-size:25px; }
 #errorBox { display:none; background:#fee2e2; color:#991b1b; padding:12px; margin:12px 20px; border-radius:7px; white-space:pre-wrap; overflow-wrap:anywhere; }
 footer { padding:20px; background:#101827; color:#aab4c5; text-align:center; font-size:13px; margin-top:24px; }
 
+@media(max-width:1050px) {
+  .explorer-grid { grid-template-columns:1fr 1fr; }
+  .h2h-layout { grid-template-columns:1fr; }
+}
 @media(max-width:900px) {
   .sim-grid { grid-template-columns:1fr; }
 }
 @media(max-width:850px) {
   .summary-bar { grid-template-columns:repeat(2, 1fr); }
-  .explorer-grid { grid-template-columns:1fr 1fr; }
 }
 @media(max-width:650px) {
   #map { height:500px; }
   main { padding:12px; }
   .year-button { padding:8px 11px; }
-  .shift-controls select { margin-left:0; }
+  .compare-controls select { margin-left:0; }
   .summary-bar { grid-template-columns:1fr; }
-  .explorer-grid { grid-template-columns:1fr; }
+  .explorer-grid, .h2h-grid { grid-template-columns:1fr; }
 }
 </style>
 </head>
@@ -287,16 +364,42 @@ footer { padding:20px; background:#101827; color:#aab4c5; text-align:center; fon
 
 <main>
 <h1 id="mapTitle">2024 Presidential Election</h1>
-<div class="subtitle">Explore presidential election results by county and compare how counties have shifted over time.</div>
+<div class="subtitle">Explore presidential election results by county, simulate national swings, and compare historical turnout and margins.</div>
 
 <div class="top-controls">
   <div class="mode-selector">
     <button id="resultsMode" class="mode-button active">Election Results</button>
     <button id="shiftMode" class="mode-button">County Shift</button>
+    <button id="turnoutMode" class="mode-button">Turnout Change</button>
   </div>
-  <button id="shareButton" type="button">Copy Share Link</button>
+  <div class="action-buttons">
+    <button id="snapshotButton" class="action-btn" type="button">Save Map PNG</button>
+    <button id="shareButton" class="action-btn" type="button">Copy Share Link</button>
+  </div>
 </div>
 
+<!-- Live Electoral College Bar -->
+<div class="ec-card" id="ecCard">
+  <div class="ec-header">
+    <div><span class="ec-dem-score" id="ecDemCount">D: —</span> <span style="color:#667085;font-size:12px">EVs</span></div>
+    <div class="ec-center-info">
+      <strong>270 Electoral Votes to Win</strong>
+      <span id="ecTippingPoint"> • Tipping-Point State: —</span>
+    </div>
+    <div><span style="color:#667085;font-size:12px">EVs</span> <span class="ec-rep-score" id="ecRepCount">R: —</span></div>
+  </div>
+  <div class="ec-bar-track">
+    <div class="ec-bar-dem" id="ecBarDem" style="width:50%"></div>
+    <div class="ec-270-line" title="270 Electoral Votes"></div>
+    <div class="ec-bar-rep" id="ecBarRep" style="width:50%"></div>
+  </div>
+  <div class="ec-footer">
+    <span id="ecCycleNote">Uses historical Electoral Vote apportionment (statewide winner-take-all).</span>
+    <span id="ecTippingNpv">Tipping-point NPV: —</span>
+  </div>
+</div>
+
+<!-- Summary Scoreboard -->
 <div class="summary-bar" id="summaryBar">
   <div class="summary-card">
     <div class="summary-label" id="sumScopeLabel">Region</div>
@@ -320,17 +423,25 @@ footer { padding:20px; background:#101827; color:#aab4c5; text-align:center; fon
   </div>
 </div>
 
+<!-- Interactive Map -->
 <div class="map-wrapper">
   <div class="map-topleft-controls">
     <button id="resetMapButton" class="map-nav-btn" type="button">← Back to US Map</button>
     <button id="jumpLower48" class="map-nav-btn" type="button">Lower 48</button>
     <button id="jumpAlaska" class="map-nav-btn" type="button">Alaska</button>
     <button id="jumpHawaii" class="map-nav-btn" type="button">Hawaii</button>
+    <select id="mapHighlightSelect" class="map-highlight-select" aria-label="Highlight county streaks">
+      <option value="none">Outlines: Standard</option>
+      <option value="bellwether">Outline: 2000–2024 Bellwethers</option>
+      <option value="swing">Outline: Swing Counties (2+ Flips)</option>
+      <option value="flip2024">Outline: Flipped in 2024</option>
+    </select>
   </div>
   <div id="hoverTooltip"></div>
   <div id="map"></div>
 </div>
 
+<!-- Results Mode Controls -->
 <div id="resultsControls">
   <div class="year-bar">
     <div class="year-heading">
@@ -376,7 +487,7 @@ footer { padding:20px; background:#101827; color:#aab4c5; text-align:center; fon
         <button class="mini-btn npv-preset" data-shift="2" type="button">D+2 Shift</button>
         <button class="mini-btn npv-preset" data-shift="5" type="button">D+5 Shift</button>
       </div>
-      <div class="control-hint">Applies a uniform shift to every county's two-party margin (+ shifts toward Democrats, − shifts toward Republicans).</div>
+      <div class="control-hint">Applies a uniform shift to every county's two-party margin and updates Electoral Votes live (+ shifts toward Democrats, − shifts toward Republicans).</div>
     </div>
 
     <div class="control-card">
@@ -403,17 +514,18 @@ footer { padding:20px; background:#101827; color:#aab4c5; text-align:center; fon
   </div>
 </div>
 
-<div class="shift-controls" id="shiftControls">
-  <strong>Compare two presidential elections</strong>
+<!-- Comparison Controls (Shared by County Shift & Turnout Change Modes) -->
+<div class="compare-controls" id="compareControls">
+  <strong id="compareControlsTitle">Compare two presidential elections</strong>
   <p>
-    <span class="shift-select-label">From:</span>
+    <span class="compare-select-label">From:</span>
     <select id="fromYear">
       <option value="2000">2000</option><option value="2004">2004</option>
       <option value="2008">2008</option><option value="2012">2012</option>
       <option value="2016" selected>2016</option><option value="2020">2020</option>
       <option value="2024">2024</option>
     </select>
-    <span class="shift-select-label">To:</span>
+    <span class="compare-select-label">To:</span>
     <select id="toYear">
       <option value="2000">2000</option><option value="2004">2004</option>
       <option value="2008">2008</option><option value="2012">2012</option>
@@ -421,9 +533,10 @@ footer { padding:20px; background:#101827; color:#aab4c5; text-align:center; fon
       <option value="2024" selected>2024</option>
     </select>
   </p>
-  <div class="shift-description">Positive shifts mean movement toward Democrats. Negative shifts mean movement toward Republicans. The comparison uses the two-party vote margin.</div>
+  <div class="compare-description" id="compareDescription">Positive shifts mean movement toward Democrats. Negative shifts mean movement toward Republicans. The comparison uses the two-party vote margin.</div>
 </div>
 
+<!-- Legends -->
 <div class="legend">
   <div id="resultsLegend"></div>
   <div id="shiftLegend">
@@ -435,10 +548,47 @@ footer { padding:20px; background:#101827; color:#aab4c5; text-align:center; fon
     <div class="legend-range"><div class="swatch" style="background:#e47770"></div>R+3 to R+6 shift</div>
     <div class="legend-range"><div class="swatch" style="background:#a91e27"></div>R+6 or more shift</div>
   </div>
+  <div id="turnoutLegend">
+    <div class="legend-range"><div class="swatch" style="background:#005a32"></div>+25% or more growth</div>
+    <div class="legend-range"><div class="swatch" style="background:#238b45"></div>+10% to +25%</div>
+    <div class="legend-range"><div class="swatch" style="background:#74c476"></div>+2% to +10%</div>
+    <div class="legend-range"><div class="swatch" style="background:#d1d5db"></div>-2% to +2%</div>
+    <div class="legend-range"><div class="swatch" style="background:#fec44f"></div>-2% to -10% drop</div>
+    <div class="legend-range"><div class="swatch" style="background:#d95f0e"></div>-10% or more drop</div>
+    <div class="legend-range"><div class="swatch" style="background:#e5e7eb"></div>No data</div>
+  </div>
 </div>
 
 <div id="status">Loading election data...</div>
 
+<!-- County-to-County Head-to-Head Comparison -->
+<section class="h2h-panel">
+  <strong>County-to-County Head-to-Head Comparison</strong>
+  <div class="h2h-grid">
+    <div class="explorer-field">
+      <label for="h2hCountyA">County A (Blue Line)</label>
+      <input id="h2hCountyA" list="countyOptions" placeholder="Example: Maricopa, AZ" autocomplete="off">
+    </div>
+    <div class="explorer-field">
+      <label for="h2hCountyB">County B (Amber Line)</label>
+      <input id="h2hCountyB" list="countyOptions" placeholder="Example: Dane, WI" autocomplete="off">
+    </div>
+    <button id="h2hCompareBtn" type="button">Compare Counties</button>
+  </div>
+  <div id="h2hResult">
+    <div class="h2h-layout">
+      <div class="h2h-chart-box">
+        <div class="h2h-legend" id="h2hLegend"></div>
+        <div id="h2hSvgWrap"></div>
+      </div>
+      <div class="table-wrap">
+        <table class="h2h-table" id="h2hTable"></table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- County Search & Rankings Explorer -->
 <section class="explorer-panel">
   <strong>Find and rank counties</strong>
   <div class="explorer-grid">
@@ -454,6 +604,15 @@ footer { padding:20px; background:#101827; color:#aab4c5; text-align:center; fon
       </select>
     </div>
     <div class="explorer-field">
+      <label for="streakFilter">Filter by streak</label>
+      <select id="streakFilter">
+        <option value="all">All Counties</option>
+        <option value="bellwether">2000–2024 Bellwethers (7/7)</option>
+        <option value="swing">Swing Counties (2+ Flips)</option>
+        <option value="flip2024">Flipped in 2024</option>
+      </select>
+    </div>
+    <div class="explorer-field">
       <label for="rankingSort">Rank counties by</label>
       <select id="rankingSort">
         <option value="dem">Most Democratic margin</option>
@@ -463,6 +622,8 @@ footer { padding:20px; background:#101827; color:#aab4c5; text-align:center; fon
         <option value="shiftDem">Biggest shift toward Democrats</option>
         <option value="shiftRep">Biggest shift toward Republicans</option>
         <option value="flip">Party switches</option>
+        <option value="turnoutUp">Biggest turnout growth (%)</option>
+        <option value="turnoutDown">Biggest turnout drop (%)</option>
       </select>
     </div>
     <button id="countySearchButton" type="button">Find county</button>
@@ -470,12 +631,15 @@ footer { padding:20px; background:#101827; color:#aab4c5; text-align:center; fon
   <div id="searchMessage">Click a state on the map to zoom in, search for a county, or select a row in the rankings.</div>
   <div class="ranking-heading">
     <h2 id="rankingTitle">County rankings — 2024</h2>
-    <span id="rankingCount"></span>
+    <div class="ranking-actions">
+      <span id="rankingCount"></span>
+      <button id="exportCsvButton" class="mini-btn" type="button">Download CSV</button>
+    </div>
   </div>
   <div class="table-wrap">
     <table id="countyRanking">
-      <thead><tr><th>#</th><th>County</th><th>State</th><th>Margin / shift</th><th>Votes</th></tr></thead>
-      <tbody id="rankingBody"><tr><td colspan="5">Loading county rankings...</td></tr></tbody>
+      <thead><tr><th>#</th><th>County</th><th>State</th><th>Margin / Change</th><th>Votes</th><th>Streak</th></tr></thead>
+      <tbody id="rankingBody"><tr><td colspan="6">Loading county rankings...</td></tr></tbody>
     </table>
   </div>
   <div class="table-note" id="rankingNote">Margins are calculated from Democratic and Republican votes only. Select a row to zoom to that county.</div>
@@ -489,6 +653,23 @@ footer { padding:20px; background:#101827; color:#aab4c5; text-align:center; fon
 
 <script>
 const years=[2000,2004,2008,2012,2016,2020,2024];
+const NATIONAL_WINNER={2000:"R",2004:"R",2008:"D",2012:"D",2016:"R",2020:"D",2024:"R"};
+
+// Electoral Votes by State FIPS across Census Reapportionment Cycles
+const EV_BY_CYCLE={
+  "2000":{"01":9,"02":3,"04":8,"05":6,"06":54,"08":8,"09":8,"10":3,"11":3,"12":25,"13":13,"15":4,"16":4,"17":22,"18":12,"19":7,"20":6,"21":8,"22":9,"23":4,"24":10,"25":12,"26":18,"27":10,"28":7,"29":11,"30":3,"31":5,"32":4,"33":4,"34":15,"35":5,"36":33,"37":14,"38":3,"39":21,"40":8,"41":7,"42":23,"44":4,"45":8,"46":3,"47":11,"48":32,"49":5,"50":3,"51":13,"53":11,"54":5,"55":11,"56":3},
+  "2004_2008":{"01":9,"02":3,"04":10,"05":6,"06":55,"08":9,"09":7,"10":3,"11":3,"12":27,"13":15,"15":4,"16":4,"17":21,"18":11,"19":7,"20":6,"21":8,"22":9,"23":4,"24":10,"25":12,"26":17,"27":10,"28":6,"29":11,"30":3,"31":5,"32":5,"33":4,"34":15,"35":5,"36":31,"37":15,"38":3,"39":20,"40":7,"41":7,"42":21,"44":4,"45":8,"46":3,"47":11,"48":34,"49":5,"50":3,"51":13,"53":11,"54":5,"55":10,"56":3},
+  "2012_2020":{"01":9,"02":3,"04":11,"05":6,"06":55,"08":9,"09":7,"10":3,"11":3,"12":29,"13":16,"15":4,"16":4,"17":20,"18":11,"19":6,"20":6,"21":8,"22":8,"23":4,"24":10,"25":11,"26":16,"27":10,"28":6,"29":10,"30":3,"31":5,"32":6,"33":4,"34":14,"35":5,"36":29,"37":15,"38":3,"39":18,"40":7,"41":7,"42":20,"44":4,"45":9,"46":3,"47":11,"48":38,"49":6,"50":3,"51":13,"53":12,"54":5,"55":10,"56":3},
+  "2024":{"01":9,"02":3,"04":11,"05":6,"06":54,"08":10,"09":7,"10":3,"11":3,"12":30,"13":16,"15":4,"16":4,"17":19,"18":11,"19":6,"20":6,"21":8,"22":8,"23":4,"24":10,"25":11,"26":15,"27":10,"28":6,"29":10,"30":4,"31":5,"32":6,"33":4,"34":14,"35":5,"36":28,"37":16,"38":3,"39":17,"40":7,"41":8,"42":19,"44":4,"45":9,"46":3,"47":11,"48":40,"49":6,"50":3,"51":13,"53":12,"54":4,"55":10,"56":3}
+};
+
+function getEvTableForYear(yr){
+  if(yr<=2000) return EV_BY_CYCLE["2000"];
+  if(yr<=2008) return EV_BY_CYCLE["2004_2008"];
+  if(yr<=2020) return EV_BY_CYCLE["2012_2020"];
+  return EV_BY_CYCLE["2024"];
+}
+
 const DEFAULT_CENTER=[-96,38];
 const DEFAULT_ZOOM=3.3;
 const STATE_ZOOM_THRESHOLD=4.5;
@@ -499,6 +680,8 @@ const hoverTooltip=document.getElementById("hoverTooltip");
 const resetMapButton=document.getElementById("resetMapButton");
 const playButton=document.getElementById("playButton");
 const stateFilter=document.getElementById("stateFilter");
+const streakFilter=document.getElementById("streakFilter");
+const mapHighlightSelect=document.getElementById("mapHighlightSelect");
 const npvSlider=document.getElementById("npvSlider");
 const npvInput=document.getElementById("npvInput");
 
@@ -511,6 +694,7 @@ window.addEventListener("unhandledrejection",event=>showError(String(event.reaso
 
 const map=new maplibregl.Map({
   container:"map",
+  preserveDrawingBuffer:true,
   style:{
     version:8,
     sources:{},
@@ -528,6 +712,8 @@ let statesByFips={};
 let stateAbbrByFips={};
 let resultsByYear={};
 let actualNpvByYear={};
+let countyHistoryMeta={};
+let currentRankedRows=[];
 let currentYear=2024;
 let npvShift=0;
 let mapMode="results";
@@ -587,6 +773,16 @@ function getResultsColor(margin,winner){
   return "#a50f15";
 }
 
+function getTurnoutColor(pct){
+  if(pct===null||pct===undefined||Number.isNaN(pct)) return "#e5e7eb";
+  if(pct>=25) return "#005a32";
+  if(pct>=10) return "#238b45";
+  if(pct>=2) return "#74c476";
+  if(pct>-2) return "#d1d5db";
+  if(pct>-10) return "#fec44f";
+  return "#d95f0e";
+}
+
 // --- URL Hash State Sync ---
 function syncUrlHash(){
   if(isRestoringHash) return;
@@ -622,11 +818,44 @@ document.getElementById("shareButton").addEventListener("click",async()=>{
   setTimeout(()=>{btn.textContent="Copy Share Link";},2000);
 });
 
+// --- Map PNG Snapshot ---
+document.getElementById("snapshotButton").addEventListener("click",()=>{
+  const mapCanvas=map.getCanvas();
+  const bannerHeight=54;
+  const out=document.createElement("canvas");
+  out.width=mapCanvas.width;
+  out.height=mapCanvas.height+bannerHeight;
+  const ctx=out.getContext("2d");
+
+  ctx.fillStyle="#101827";
+  ctx.fillRect(0,0,out.width,bannerHeight);
+
+  const titleText=document.getElementById("mapTitle").textContent;
+  const subText=mapMode==="results"
+    ?`EC: ${document.getElementById("ecDemCount").textContent} vs ${document.getElementById("ecRepCount").textContent} | Simulated NPV: ${document.getElementById("simNpvText").textContent}`
+    :statusBox.textContent;
+
+  ctx.fillStyle="#ffffff";
+  ctx.font="bold 20px Arial, sans-serif";
+  ctx.fillText("SeatCast — "+titleText,18,24);
+
+  ctx.fillStyle="#cbd5e1";
+  ctx.font="13px Arial, sans-serif";
+  ctx.fillText(subText,18,44);
+
+  ctx.drawImage(mapCanvas,0,bannerHeight);
+
+  const link=document.createElement("a");
+  link.download=`seatcast-${mapMode}-${currentYear}.png`;
+  link.href=out.toDataURL("image/png");
+  link.click();
+});
+
 function showCountyPopup(lngLat,html,fips){
   if(activePopup) activePopup.remove();
   selectedCountyFips=fips||"";
   syncUrlHash();
-  activePopup=new maplibregl.Popup({maxWidth:"295px"}).setLngLat(lngLat).setHTML(html).addTo(map);
+  activePopup=new maplibregl.Popup({maxWidth:"300px"}).setLngLat(lngLat).setHTML(html).addTo(map);
   activePopup.on("close",()=>{
     selectedCountyFips="";
     syncUrlHash();
@@ -641,6 +870,31 @@ function setSelectedCountyHighlight(fips){
     map.setFilter("selected-outline",["==","mapFips",fips||""]);
   }
 }
+
+// --- Bellwether & Streak Highlight Layer ---
+function applyStreakMapHighlight(){
+  const mode=mapHighlightSelect.value;
+  if(!map.getLayer("streak-outline")) return;
+  if(mode==="none"){
+    map.setFilter("streak-outline",["==","mapFips",""]);
+  }else if(mode==="bellwether"){
+    map.setFilter("streak-outline",["==",["get","isBellwether"],true]);
+  }else if(mode==="swing"){
+    map.setFilter("streak-outline",[">=",["get","flipCount"],2]);
+  }else if(mode==="flip2024"){
+    map.setFilter("streak-outline",["==",["get","flipped2024"],true]);
+  }
+}
+mapHighlightSelect.addEventListener("change",()=>{
+  applyStreakMapHighlight();
+  streakFilter.value=mapHighlightSelect.value==="none"?"all":mapHighlightSelect.value;
+  refreshCountyExplorer();
+});
+streakFilter.addEventListener("change",()=>{
+  mapHighlightSelect.value=streakFilter.value==="all"?"none":streakFilter.value;
+  applyStreakMapHighlight();
+  refreshCountyExplorer();
+});
 
 function updateResetButtonVisibility(){
   const zoomedIn=map.getZoom()>DEFAULT_ZOOM+0.35||Boolean(selectedStateFips);
@@ -752,7 +1006,6 @@ document.getElementById("tieNpvBtn").addEventListener("click",()=>{
   setNpvShift(-actual);
 });
 
-// Custom cutoffs listeners
 ["cutoff1","cutoff2","cutoff3"].forEach(id=>{
   document.getElementById(id).addEventListener("change",()=>{
     updateResultsLegend();
@@ -766,6 +1019,78 @@ document.getElementById("resetCutoffsBtn").addEventListener("click",()=>{
   updateResultsLegend();
   if(counties&&mapMode==="results") updateMapForYear(currentYear);
 });
+
+// --- Live Electoral College Calculator ---
+function updateElectoralCollege(){
+  const ecCard=document.getElementById("ecCard");
+  if(mapMode!=="results"){
+    ecCard.style.display="none";
+    return;
+  }
+  ecCard.style.display="block";
+
+  const electionResults=resultsByYear[currentYear]||{};
+  const evTable=getEvTableForYear(currentYear);
+  const stateTotals={};
+
+  Object.entries(electionResults).forEach(([fips,r])=>{
+    const stFips=fips.slice(0,2);
+    if(!evTable[stFips]) return;
+    if(!stateTotals[stFips]) stateTotals[stFips]={dem:0,rep:0};
+    const d=Number(r.dem)||0;
+    const rep=Number(r.rep)||0;
+    const twoParty=d+rep;
+    if(twoParty>0){
+      const rawM=100*(d-rep)/twoParty;
+      const adjM=Math.max(-100,Math.min(100,rawM+npvShift));
+      const adjD=twoParty*((100+adjM)/200);
+      stateTotals[stFips].dem+=adjD;
+      stateTotals[stFips].rep+=(twoParty-adjD);
+    }
+  });
+
+  let demEv=0,repEv=0;
+  const stateMargins=[];
+
+  Object.entries(evTable).forEach(([stFips,evs])=>{
+    const tot=stateTotals[stFips];
+    if(!tot||(tot.dem+tot.rep)<=0) return;
+    const margin=100*(tot.dem-tot.rep)/(tot.dem+tot.rep);
+    if(margin>0) demEv+=evs;
+    else if(margin<0) repEv+=evs;
+    const name=statesByFips[stFips]?.properties?.name||stateAbbrByFips[stFips]||stFips;
+    stateMargins.push({stFips,name,evs,margin});
+  });
+
+  // Sort from most Democratic to most Republican to find Tipping-Point State
+  stateMargins.sort((a,b)=>b.margin-a.margin);
+  let cumEv=0;
+  let tippingState=null;
+  for(const st of stateMargins){
+    cumEv+=st.evs;
+    if(cumEv>=270){
+      tippingState=st;
+      break;
+    }
+  }
+
+  document.getElementById("ecDemCount").textContent=`D: ${demEv}`;
+  document.getElementById("ecRepCount").textContent=`R: ${repEv}`;
+  document.getElementById("ecBarDem").style.width=`${(demEv/538)*100}%`;
+  document.getElementById("ecBarRep").style.width=`${(repEv/538)*100}%`;
+
+  if(tippingState){
+    const actualNpv=actualNpvByYear[currentYear]??0;
+    const tippingNpv=actualNpv-tippingState.margin;
+    document.getElementById("ecTippingPoint").innerHTML=
+      ` • Tipping-Point State: <strong>${esc(tippingState.name)}</strong> (${fmtMarginStr(tippingState.margin)})`;
+    document.getElementById("ecTippingNpv").innerHTML=
+      `270-EV Tipping-Point NPV: <strong>${fmtMarginStr(tippingNpv)}</strong>`;
+  }else{
+    document.getElementById("ecTippingPoint").textContent="";
+    document.getElementById("ecTippingNpv").textContent="";
+  }
+}
 
 // --- Dynamic Summary Scoreboard ---
 function updateSummaryBar(){
@@ -787,8 +1112,7 @@ function updateSummaryBar(){
       if(twoParty>0){
         const rawM=100*(d-rep)/twoParty;
         const adjM=Math.max(-100,Math.min(100,rawM+npvShift));
-        const adjDemShare=(100+adjM)/200;
-        const adjD=twoParty*adjDemShare;
+        const adjD=twoParty*((100+adjM)/200);
         const adjR=twoParty-adjD;
         demVotes+=adjD;
         repVotes+=adjR;
@@ -816,7 +1140,7 @@ function updateSummaryBar(){
     document.getElementById("sumCountiesLabel").textContent="Counties Won";
     document.getElementById("sumCountiesVal").innerHTML=`<span class="text-dem">D: ${demCounties.toLocaleString()}</span> &nbsp;|&nbsp; <span class="text-rep">R: ${repCounties.toLocaleString()}</span>`;
     document.getElementById("sumCountiesSub").textContent=`${(demCounties+repCounties).toLocaleString()} counties reporting`;
-  }else{
+  }else if(mapMode==="shift"){
     const fromYear=Number(document.getElementById("fromYear").value);
     const toYear=Number(document.getElementById("toYear").value);
     const oldRes=resultsByYear[fromYear]||{};
@@ -855,7 +1179,51 @@ function updateSummaryBar(){
     document.getElementById("sumCountiesLabel").textContent="County Direction";
     document.getElementById("sumCountiesVal").innerHTML=`<span class="text-dem">D+: ${shiftDCount.toLocaleString()}</span> &nbsp;|&nbsp; <span class="text-rep">R+: ${shiftRCount.toLocaleString()}</span>`;
     document.getElementById("sumCountiesSub").textContent="Counties shifting each way";
+  }else if(mapMode==="turnout"){
+    const fromYear=Number(document.getElementById("fromYear").value);
+    const toYear=Number(document.getElementById("toYear").value);
+    const oldRes=resultsByYear[fromYear]||{};
+    const newRes=resultsByYear[toYear]||{};
+    let oldTot=0,newTot=0,upCount=0,downCount=0;
+
+    Object.entries(newRes).forEach(([fips,nr])=>{
+      if(selectedStateFips&&!fips.startsWith(selectedStateFips)) return;
+      const or=oldRes[fips];
+      if(!or) return;
+      const ot=Number(or.total)||(Number(or.dem)+Number(or.rep))||0;
+      const nt=Number(nr.total)||(Number(nr.dem)+Number(nr.rep))||0;
+      if(ot<=0||nt<=0) return;
+      oldTot+=ot;
+      newTot+=nt;
+      if(nt>ot) upCount++;
+      else if(nt<ot) downCount++;
+    });
+
+    const netDiff=newTot-oldTot;
+    const pctChange=oldTot>0?100*netDiff/oldTot:0;
+    const pctCls=pctChange>=0?"text-green":"text-rep";
+
+    document.getElementById("sumScopeLabel").textContent=selectedStateFips?"State Turnout":"National Turnout";
+    document.getElementById("sumScopeSub").textContent=`${fromYear} → ${toYear} ballots cast`;
+    document.getElementById("sumDemLabel").textContent=`${fromYear} Total Ballots`;
+    document.getElementById("sumDemVal").className="summary-value";
+    document.getElementById("sumDemVal").textContent=oldTot.toLocaleString();
+    document.getElementById("sumDemSub").textContent="Baseline election";
+    document.getElementById("sumRepLabel").textContent=`${toYear} Total Ballots`;
+    document.getElementById("sumRepVal").className="summary-value "+pctCls;
+    document.getElementById("sumRepVal").textContent=`${newTot.toLocaleString()} (${pctChange>=0?"+":""}${pctChange.toFixed(1)}%)`;
+    document.getElementById("sumRepSub").textContent=`${netDiff>=0?"+":""}${netDiff.toLocaleString()} net ballots`;
+    document.getElementById("sumCountiesLabel").textContent="County Turnout";
+    document.getElementById("sumCountiesVal").innerHTML=`<span class="text-green">Up: ${upCount.toLocaleString()}</span> &nbsp;|&nbsp; <span class="text-rep">Down: ${downCount.toLocaleString()}</span>`;
+    document.getElementById("sumCountiesSub").textContent="Counties growing vs. shrinking";
   }
+}
+
+function attachHistoryProps(p,dataFips){
+  const meta=countyHistoryMeta[dataFips]||{isBellwether:false,flipCount:0,flipped2024:false};
+  p.isBellwether=meta.isBellwether;
+  p.flipCount=meta.flipCount;
+  p.flipped2024=meta.flipped2024;
 }
 
 function updateMapForYear(year){
@@ -880,9 +1248,10 @@ function updateMapForYear(year){
 
   counties.features.forEach(feature=>{
     const fips=getCountyFips(feature);
+    const dataFips=getElectionFips(fips);
     const stateFips=fips.slice(0,2);
     const stateFeature=statesByFips[stateFips];
-    const result=electionResults[getElectionFips(fips)];
+    const result=electionResults[dataFips];
     const p=feature.properties;
     const rawMargin=result&&(Number(result.dem)+Number(result.rep))>0
       ?100*(Number(result.dem)-Number(result.rep))/(Number(result.dem)+Number(result.rep)):null;
@@ -905,22 +1274,29 @@ function updateMapForYear(year){
     p.mapFips=fips;
     p.shiftAvailable=false;
     p.shift=null;
+    p.turnoutAvailable=false;
+    p.turnoutPct=null;
+    attachHistoryProps(p,dataFips);
   });
 
   map.getSource("counties").setData(counties);
+  updateElectoralCollege();
   updateSummaryBar();
   refreshCountyExplorer();
   syncUrlHash();
   statusBox.textContent="Showing "+currentYear+" presidential results"+(npvShift!==0?` with ${fmtMarginStr(npvShift)} uniform NPV shift`:"")+" | "+Object.keys(electionResults).length+" county records.";
 }
 
-function updateMapForShift(){
+function updateMapForCompare(){
   const fromYear=Number(document.getElementById("fromYear").value);
   const toYear=Number(document.getElementById("toYear").value);
   const oldResults=resultsByYear[fromYear]||{};
   const newResults=resultsByYear[toYear]||{};
 
-  document.getElementById("mapTitle").textContent=fromYear+" to "+toYear+" County Shift";
+  document.getElementById("mapTitle").textContent=
+    mapMode==="shift"
+      ?`${fromYear} to ${toYear} County Margin Shift`
+      :`${fromYear} to ${toYear} County Turnout Change`;
 
   counties.features.forEach(feature=>{
     const fips=getCountyFips(feature);
@@ -934,52 +1310,74 @@ function updateMapForShift(){
     p.toYear=toYear;
     p.shift=null;
     p.shiftAvailable=false;
+    p.turnoutPct=null;
+    p.turnoutDiff=null;
+    p.oldTotal=null;
+    p.turnoutAvailable=false;
     p.stateFips=stateFips;
     p.stateFullName=stateFeature&&stateFeature.properties?stateFeature.properties.name:"";
     p.mapFips=fips;
+    attachHistoryProps(p,dataFips);
 
     if(!oldResult||!newResult){
-      p.fillColor="#d1d5db";
+      p.fillColor="#e5e7eb";
       return;
     }
 
-    const oldVotes=Number(oldResult.dem)+Number(oldResult.rep);
-    const newVotes=Number(newResult.dem)+Number(newResult.rep);
-    if(oldVotes<=0||newVotes<=0){
-      p.fillColor="#d1d5db";
-      return;
-    }
-
-    const oldMargin=100*(Number(oldResult.dem)-Number(oldResult.rep))/oldVotes;
-    const newMargin=100*(Number(newResult.dem)-Number(newResult.rep))/newVotes;
-    const shift=newMargin-oldMargin;
-
-    p.shift=shift;
-    p.shiftAvailable=true;
+    p.countyName=newResult.county;
+    p.state=newResult.state;
     p.dem=newResult.dem;
     p.rep=newResult.rep;
     p.total=newResult.total;
     p.demPct=newResult.demPct;
     p.repPct=newResult.repPct;
-    p.countyName=newResult.county;
-    p.state=newResult.state;
-    p.rawMargin=newMargin;
-    p.margin=newMargin;
 
-    if(Math.abs(shift)<1) p.fillColor="#d1d5db";
-    else if(shift>=1&&shift<3) p.fillColor="#b3d4f0";
-    else if(shift>=3&&shift<6) p.fillColor="#5b9bd5";
-    else if(shift>=6) p.fillColor="#145a96";
-    else if(shift<=-1&&shift>-3) p.fillColor="#f2b8b5";
-    else if(shift<=-3&&shift>-6) p.fillColor="#e47770";
-    else if(shift<=-6) p.fillColor="#a91e27";
+    const oldVotes=Number(oldResult.dem)+Number(oldResult.rep);
+    const newVotes=Number(newResult.dem)+Number(newResult.rep);
+    if(oldVotes>0&&newVotes>0){
+      const oldMargin=100*(Number(oldResult.dem)-Number(oldResult.rep))/oldVotes;
+      const newMargin=100*(Number(newResult.dem)-Number(newResult.rep))/newVotes;
+      p.shift=newMargin-oldMargin;
+      p.shiftAvailable=true;
+      p.rawMargin=newMargin;
+      p.margin=newMargin;
+    }
+
+    const oldTot=Number(oldResult.total)||oldVotes;
+    const newTot=Number(newResult.total)||newVotes;
+    if(oldTot>0&&newTot>0){
+      p.oldTotal=oldTot;
+      p.turnoutDiff=newTot-oldTot;
+      p.turnoutPct=100*(newTot-oldTot)/oldTot;
+      p.turnoutAvailable=true;
+    }
+
+    if(mapMode==="shift"){
+      if(!p.shiftAvailable){
+        p.fillColor="#d1d5db";
+        return;
+      }
+      const s=p.shift;
+      if(Math.abs(s)<1) p.fillColor="#d1d5db";
+      else if(s>=1&&s<3) p.fillColor="#b3d4f0";
+      else if(s>=3&&s<6) p.fillColor="#5b9bd5";
+      else if(s>=6) p.fillColor="#145a96";
+      else if(s<=-1&&s>-3) p.fillColor="#f2b8b5";
+      else if(s<=-3&&s>-6) p.fillColor="#e47770";
+      else if(s<=-6) p.fillColor="#a91e27";
+    }else if(mapMode==="turnout"){
+      p.fillColor=p.turnoutAvailable?getTurnoutColor(p.turnoutPct):"#e5e7eb";
+    }
   });
 
   map.getSource("counties").setData(counties);
+  updateElectoralCollege();
   updateSummaryBar();
   refreshCountyExplorer();
   syncUrlHash();
-  statusBox.textContent="Showing county shifts from "+fromYear+" to "+toYear+". Positive shifts indicate movement toward Democrats.";
+  statusBox.textContent=mapMode==="shift"
+    ?`Showing county shifts from ${fromYear} to ${toYear}. Positive shifts indicate movement toward Democrats.`
+    :`Showing percentage change in total ballots cast from ${fromYear} to ${toYear}.`;
 }
 
 function esc(value){
@@ -1092,6 +1490,35 @@ function buildHistoryChartHtml(mapFips){
 
 function openCountyDetailsPopup(p,lngLat){
   const chartHtml=buildHistoryChartHtml(p.mapFips);
+  const badges=[];
+  if(p.isBellwether) badges.push(`<span class="streak-pill">★ 2000–2024 Bellwether (7/7)</span>`);
+  if(p.flipCount>0) badges.push(`<span class="streak-pill swing">${p.flipCount} flip${p.flipCount>1?"s":""} since 2000</span>`);
+  const badgeRow=badges.length?`<div style="margin:5px 0">${badges.join(" ")}</div>`:"";
+
+  if(mapMode==="turnout"){
+    if(!p.turnoutAvailable){
+      showCountyPopup(
+        lngLat,
+        `<strong>No matching turnout data found.</strong><br><br>Map FIPS: ${p.mapFips}${chartHtml}`,
+        p.mapFips
+      );
+      return;
+    }
+    const pct=Number(p.turnoutPct);
+    const diff=Number(p.turnoutDiff);
+    const html=`<div style="font-family:Arial;min-width:235px">
+      <strong style="font-size:16px">${esc(p.countyName)}, ${esc(p.state||p.stateFullName)}</strong>
+      ${badgeRow}
+      <div style="color:#667085;margin:4px 0 8px">Turnout: ${p.fromYear} to ${p.toYear}</div>
+      <div>Change: <strong>${pct>=0?"+":""}${pct.toFixed(2)}%</strong> (${diff>=0?"+":""}${diff.toLocaleString()} votes)</div>
+      <hr style="border:none;border-top:1px solid #e5eaf0;margin:8px 0">
+      <div>${p.fromYear} ballots: ${Number(p.oldTotal).toLocaleString()}</div>
+      <div>${p.toYear} ballots: ${Number(p.total).toLocaleString()}</div>
+      ${chartHtml}
+    </div>`;
+    showCountyPopup(lngLat,html,p.mapFips);
+    return;
+  }
 
   if(mapMode==="shift"){
     if(!p.shiftAvailable){
@@ -1104,8 +1531,9 @@ function openCountyDetailsPopup(p,lngLat){
     }
     const direction=p.shift>0?"toward Democrats":p.shift<0?"toward Republicans":"No change";
     const startingMargin=p.margin-p.shift;
-    const html=`<div style="font-family:Arial;min-width:230px">
+    const html=`<div style="font-family:Arial;min-width:235px">
       <strong style="font-size:16px">${esc(p.countyName)}, ${esc(p.state||p.stateFullName)}</strong>
+      ${badgeRow}
       <div style="color:#667085;margin:4px 0 8px">${p.fromYear} to ${p.toYear}</div>
       <div>Shift: <strong>${Math.abs(p.shift).toFixed(2)} points</strong> (${direction})</div>
       <hr style="border:none;border-top:1px solid #e5eaf0;margin:8px 0">
@@ -1135,8 +1563,9 @@ function openCountyDetailsPopup(p,lngLat){
       </div>`
     :`<strong>Two-party margin: ${fmtMarginStr(rawMargin)}</strong>`;
 
-  const html=`<div style="font-family:Arial;min-width:235px">
+  const html=`<div style="font-family:Arial;min-width:240px">
     <strong style="font-size:16px">${esc(p.countyName||"County")}, ${esc(p.state||p.stateFullName)}</strong>
+    ${badgeRow}
     <div style="color:#667085;margin:4px 0 8px">${p.electionYear} Presidential Election</div>
     <div style="color:#2166ac">Democratic: ${Number(p.dem).toLocaleString()} (${Number(p.demPct).toFixed(2)}%)</div>
     <div style="color:#c62828">Republican: ${Number(p.rep).toLocaleString()} (${Number(p.repPct).toFixed(2)}%)</div>
@@ -1148,6 +1577,107 @@ function openCountyDetailsPopup(p,lngLat){
   showCountyPopup(lngLat,html,p.mapFips);
 }
 
+// --- County-to-County Head-to-Head Comparison ---
+function runHeadToHeadComparison(){
+  if(!counties) return;
+  const qA=document.getElementById("h2hCountyA").value.trim().toLowerCase();
+  const qB=document.getElementById("h2hCountyB").value.trim().toLowerCase();
+  if(!qA||!qB) return;
+
+  const findMatch=q=>
+    counties.features.find(x=>countyLabel(x).toLowerCase()===q)||
+    counties.features.find(x=>countyLabel(x).toLowerCase().includes(q));
+
+  const fA=findMatch(qA);
+  const fB=findMatch(qB);
+  if(!fA||!fB){
+    document.getElementById("searchMessage").textContent="Could not match one or both counties for Head-to-Head comparison.";
+    return;
+  }
+
+  const fipsA=getElectionFips(getCountyFips(fA));
+  const fipsB=getElectionFips(getCountyFips(fB));
+  const labelA=countyLabel(fA);
+  const labelB=countyLabel(fB);
+
+  const getSeries=fips=>years.map(yr=>{
+    const rec=(resultsByYear[yr]||{})[fips];
+    if(!rec) return {yr,margin:null,total:null};
+    const d=Number(rec.dem)||0,r=Number(rec.rep)||0;
+    const margin=(d+r)>0?100*(d-r)/(d+r):null;
+    const total=Number(rec.total)||(d+r)||null;
+    return {yr,margin,total};
+  });
+
+  const sA=getSeries(fipsA);
+  const sB=getSeries(fipsB);
+
+  // Build Dual-Line SVG Chart
+  const W=520,H=220,padL=44,padR=20,padT=18,padB=28;
+  const plotW=W-padL-padR,plotH=H-padT-padB;
+  const xForIdx=i=>padL+(i/(years.length-1))*plotW;
+  const yForMargin=m=>padT+((100-Math.max(-100,Math.min(100,m)))/200)*plotH;
+
+  let gridSvg="";
+  [-75,-50,-25,0,25,50,75].forEach(val=>{
+    const y=yForMargin(val);
+    const stroke=val===0?"#64748b":"#e2e8f0";
+    const dash=val===0?"":"stroke-dasharray='3,3'";
+    const lbl=val===0?"0":val>0?`D+${val}`:`R+${Math.abs(val)}`;
+    gridSvg+=`<line x1="${padL}" y1="${y}" x2="${W-padR}" y2="${y}" stroke="${stroke}" ${dash} stroke-width="${val===0?1.3:1}"/>`;
+    gridSvg+=`<text x="${padL-6}" y="${y+3.5}" text-anchor="end" font-size="10" fill="#647485">${lbl}</text>`;
+  });
+
+  years.forEach((yr,i)=>{
+    const x=xForIdx(i);
+    gridSvg+=`<text x="${x}" y="${H-8}" text-anchor="middle" font-size="10.5" fill="#475467">${yr}</text>`;
+  });
+
+  const buildLine=(series,color)=>{
+    const pts=[];
+    let circles="";
+    series.forEach((pt,i)=>{
+      if(pt.margin===null) return;
+      const x=xForIdx(i),y=yForMargin(pt.margin);
+      pts.push(`${x.toFixed(1)},${y.toFixed(1)}`);
+      circles+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="4" fill="${color}" stroke="#ffffff" stroke-width="1.5"><title>${pt.yr}: ${fmtMarginStr(pt.margin)}</title></circle>`;
+    });
+    const poly=pts.length>1?`<polyline fill="none" stroke="${color}" stroke-width="2.6" points="${pts.join(" ")}"/>`:"";
+    return poly+circles;
+  };
+
+  document.getElementById("h2hLegend").innerHTML=`
+    <span><span class="h2h-dot" style="background:#2166ac"></span>${esc(labelA)}</span>
+    <span><span class="h2h-dot" style="background:#d97706"></span>${esc(labelB)}</span>
+  `;
+  document.getElementById("h2hSvgWrap").innerHTML=
+    `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block">${gridSvg}${buildLine(sA,"#2166ac")}${buildLine(sB,"#d97706")}</svg>`;
+
+  const m2000A=sA[0].margin,m2024A=sA[6].margin;
+  const m2000B=sB[0].margin,m2024B=sB[6].margin;
+  const shiftA=(m2000A!==null&&m2024A!==null)?fmtMarginStr(m2024A-m2000A):"—";
+  const shiftB=(m2000B!==null&&m2024B!==null)?fmtMarginStr(m2024B-m2000B):"—";
+  const tGrowthA=(sA[0].total&&sA[6].total)?((100*(sA[6].total-sA[0].total)/sA[0].total).toFixed(1)+"%"):"—";
+  const tGrowthB=(sB[0].total&&sB[6].total)?((100*(sB[6].total-sB[0].total)/sB[0].total).toFixed(1)+"%"):"—";
+  const flipsA=countyHistoryMeta[fipsA]?.flipCount??0;
+  const flipsB=countyHistoryMeta[fipsB]?.flipCount??0;
+
+  document.getElementById("h2hTable").innerHTML=`
+    <thead><tr><th>Metric</th><th>${esc(labelA)}</th><th>${esc(labelB)}</th></tr></thead>
+    <tbody>
+      <tr><td>2000 Margin</td><td>${fmtMarginStr(m2000A)}</td><td>${fmtMarginStr(m2000B)}</td></tr>
+      <tr><td>2024 Margin</td><td><strong>${fmtMarginStr(m2024A)}</strong></td><td><strong>${fmtMarginStr(m2024B)}</strong></td></tr>
+      <tr><td>2000→2024 Shift</td><td>${shiftA}</td><td>${shiftB}</td></tr>
+      <tr><td>2024 Votes Cast</td><td>${sA[6].total?sA[6].total.toLocaleString():"—"}</td><td>${sB[6].total?sB[6].total.toLocaleString():"—"}</td></tr>
+      <tr><td>Turnout Growth ('00–'24)</td><td>${tGrowthA}</td><td>${tGrowthB}</td></tr>
+      <tr><td>Party Flips ('00–'24)</td><td>${flipsA}</td><td>${flipsB}</td></tr>
+    </tbody>
+  `;
+  document.getElementById("h2hResult").style.display="block";
+}
+document.getElementById("h2hCompareBtn").addEventListener("click",runHeadToHeadComparison);
+
+// --- County Rankings Explorer & CSV Export ---
 function refreshCountyExplorer(){
   if(!counties) return;
   const datalist=document.getElementById("countyOptions");
@@ -1160,19 +1690,30 @@ function refreshCountyExplorer(){
   }
 
   const sort=document.getElementById("rankingSort").value;
+  const streakVal=streakFilter.value;
+
   const available=counties.features.filter(f=>{
     const p=f.properties||{};
     if(selectedStateFips&&p.stateFips!==selectedStateFips) return false;
-    return mapMode==="shift"?p.shiftAvailable:p.margin!==null&&p.margin!==undefined;
+    if(streakVal==="bellwether"&&!p.isBellwether) return false;
+    if(streakVal==="swing"&&(p.flipCount||0)<2) return false;
+    if(streakVal==="flip2024"&&!p.flipped2024) return false;
+
+    if(mapMode==="shift") return p.shiftAvailable;
+    if(mapMode==="turnout") return p.turnoutAvailable;
+    return p.margin!==null&&p.margin!==undefined;
   });
   let rows=available.slice();
 
-  if(mapMode==="results"&&["shiftDem","shiftRep","flip"].includes(sort)) rows=[];
+  if(mapMode==="results"&&["shiftDem","shiftRep","flip","turnoutUp","turnoutDown"].includes(sort)) rows=[];
+  if(mapMode==="shift"&&["turnoutUp","turnoutDown"].includes(sort)) rows=[];
+  if(mapMode==="turnout"&&["shiftDem","shiftRep","flip"].includes(sort)) rows=[];
 
   rows.sort((a,b)=>{
     const x=a.properties,y=b.properties;
     const mx=Number(x.margin),my=Number(y.margin);
     const sx=Number(x.shift),sy=Number(y.shift);
+    const tx=Number(x.turnoutPct),ty=Number(y.turnoutPct);
     if(sort==="dem") return my-mx;
     if(sort==="rep") return mx-my;
     if(sort==="close") return Math.abs(mx)-Math.abs(my);
@@ -1184,8 +1725,12 @@ function refreshCountyExplorer(){
       const fy=Math.sign(my)!==Math.sign(my-sy);
       return Number(fy)-Number(fx)||Math.abs(sy)-Math.abs(sx);
     }
+    if(sort==="turnoutUp") return ty-tx;
+    if(sort==="turnoutDown") return tx-ty;
     return 0;
   });
+
+  currentRankedRows=rows;
 
   const from=document.getElementById("fromYear").value;
   const to=document.getElementById("toYear").value;
@@ -1200,28 +1745,35 @@ function refreshCountyExplorer(){
   document.getElementById("rankingCount").textContent=rows.length.toLocaleString()+" counties";
   document.getElementById("rankingNote").textContent=
     mapMode==="results"
-      ?(rows.length?"Margins reflect Democratic vs. Republican votes (including any active NPV shift). Select a row to zoom to that county.":"Switch to County Shift mode to rank historical shifts and party switches.")
-      :"Positive shifts indicate movement toward Democrats; negative shifts indicate movement toward Republicans. Select a row to zoom to it.";
+      ?(rows.length?"Margins reflect Democratic vs. Republican votes (including any active NPV shift). Select a row to zoom to that county.":"Switch to County Shift or Turnout Change mode for this ranking.")
+      :"Select any row to zoom directly to that county on the map.";
 
   const body=document.getElementById("rankingBody");
   if(!rows.length){
-    body.innerHTML='<tr><td colspan="5">No counties available for this ranking in the current mode.</td></tr>';
+    body.innerHTML='<tr><td colspan="6">No counties available for this ranking in the current mode.</td></tr>';
     return;
   }
 
   const limit=selectedStateFips?rows.length:100;
   body.innerHTML=rows.slice(0,limit).map((f,i)=>{
-    const p=f.properties,m=Number(p.margin),s=Number(p.shift);
+    const p=f.properties,m=Number(p.margin),s=Number(p.shift),tPct=Number(p.turnoutPct);
     let value=fmtMarginStr(m);
     let colorClass=m>=0?"party-dem":"party-rep";
 
-    if(sort==="shiftDem"||sort==="shiftRep"){
+    if(mapMode==="turnout"||sort==="turnoutUp"||sort==="turnoutDown"){
+      value=`${tPct>=0?"+":""}${tPct.toFixed(2)}%`;
+      colorClass=tPct>=0?"text-green":"party-rep";
+    }else if(sort==="shiftDem"||sort==="shiftRep"){
       value=s>0?"D+"+s.toFixed(2)+" shift":s<0?"R+"+Math.abs(s).toFixed(2)+" shift":"No change";
       colorClass=s>=0?"party-dem":"party-rep";
-    }
-    if(sort==="flip"){
+    }else if(sort==="flip"){
       value=Math.sign(m)!==Math.sign(m-s)?"Changed party":"No party switch";
     }
+
+    let streakHtml="—";
+    if(p.isBellwether) streakHtml=`<span class="streak-pill">Bellwether 7/7</span>`;
+    else if((p.flipCount||0)>=2) streakHtml=`<span class="streak-pill swing">${p.flipCount} Flips</span>`;
+    else if(p.flipCount===1) streakHtml=`1 Flip`;
 
     return `<tr data-index="${counties.features.indexOf(f)}">
       <td class="rank-number">${i+1}</td>
@@ -1229,6 +1781,7 @@ function refreshCountyExplorer(){
       <td>${esc(p.state)}</td>
       <td class="${colorClass}">${esc(value)}</td>
       <td>${Number(p.total||0).toLocaleString()}</td>
+      <td>${streakHtml}</td>
     </tr>`;
   }).join("");
 
@@ -1239,6 +1792,40 @@ function refreshCountyExplorer(){
     openCountyDetailsPopup(p,center);
   }));
 }
+
+// --- Export CSV ---
+document.getElementById("exportCsvButton").addEventListener("click",()=>{
+  if(!currentRankedRows.length) return;
+  const headers=["Rank","FIPS","County","State","Margin","Shift","Turnout_Pct_Change","Dem_Votes","Rep_Votes","Total_Votes","Flips_Since_2000","Bellwether_2000_2024"];
+  const lines=[headers.join(",")];
+
+  currentRankedRows.forEach((f,i)=>{
+    const p=f.properties;
+    const row=[
+      i+1,
+      `"${p.mapFips||""}"`,
+      `"${String(p.countyName||"").replace(/"/g,'""')}"`,
+      `"${p.state||""}"`,
+      p.margin!==null&&p.margin!==undefined?Number(p.margin).toFixed(2):"",
+      p.shift!==null&&p.shift!==undefined?Number(p.shift).toFixed(2):"",
+      p.turnoutPct!==null&&p.turnoutPct!==undefined?Number(p.turnoutPct).toFixed(2):"",
+      p.dem??"",
+      p.rep??"",
+      p.total??"",
+      p.flipCount??0,
+      p.isBellwether?"Yes":"No"
+    ];
+    lines.push(row.join(","));
+  });
+
+  const blob=new Blob([lines.join("\n")],{type:"text/csv;charset=utf-8;"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url;
+  a.download=`seatcast-counties-${mapMode}-${currentYear}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+});
 
 function findCounty(){
   const q=document.getElementById("countySearch").value.trim().toLowerCase();
@@ -1272,164 +1859,21 @@ function selectYear(year){
   updateMapForYear(year);
 }
 function showMapMode(mode){
-  if(mode==="shift") stopTimelapse();
+  if(mode!=="results") stopTimelapse();
   mapMode=mode;
   document.getElementById("resultsMode").classList.toggle("active",mode==="results");
   document.getElementById("shiftMode").classList.toggle("active",mode==="shift");
+  document.getElementById("turnoutMode").classList.toggle("active",mode==="turnout");
+
   document.getElementById("resultsControls").style.display=mode==="results"?"block":"none";
-  document.getElementById("shiftControls").style.display=mode==="shift"?"block":"none";
+  document.getElementById("compareControls").style.display=mode!=="results"?"block":"none";
   document.getElementById("resultsLegend").style.display=mode==="results"?"flex":"none";
   document.getElementById("shiftLegend").style.display=mode==="shift"?"flex":"none";
-  if(!counties) return;
-  if(mode==="shift"){
-    document.getElementById("rankingSort").value="shiftDem";
-    updateMapForShift();
-  }else{
-    document.getElementById("rankingSort").value="dem";
-    updateMapForYear(currentYear);
-  }
-  refreshCountyExplorer();
-}
-
-document.querySelectorAll(".year-button").forEach(button=>
-  button.addEventListener("click",()=>selectYear(Number(button.dataset.year)))
-);
-document.getElementById("yearSlider").addEventListener("input",event=>
-  selectYear(years[Number(event.target.value)])
-);
-document.getElementById("resultsMode").addEventListener("click",()=>showMapMode("results"));
-document.getElementById("shiftMode").addEventListener("click",()=>showMapMode("shift"));
-document.getElementById("fromYear").addEventListener("change",()=>{if(mapMode==="shift")updateMapForShift();});
-document.getElementById("toYear").addEventListener("change",()=>{if(mapMode==="shift")updateMapForShift();});
-
-function restoreFromUrlHash(){
-  if(!window.location.hash||window.location.hash.length<2) return false;
-  const params=new URLSearchParams(window.location.hash.slice(1));
-  isRestoringHash=true;
-
-  const c1=params.get("c1"),c2=params.get("c2"),c3=params.get("c3");
-  if(c1) document.getElementById("cutoff1").value=c1;
-  if(c2) document.getElementById("cutoff2").value=c2;
-  if(c3) document.getElementById("cutoff3").value=c3;
-  updateResultsLegend();
-
-  const npv=params.get("npv");
-  if(npv!==null){
-    npvShift=Number(npv)||0;
-    npvSlider.value=Math.max(-15,Math.min(15,npvShift));
-    npvInput.value=npvShift;
-  }
-
-  const mode=params.get("mode");
-  const yr=Number(params.get("year"));
-  const from=params.get("from");
-  const to=params.get("to");
-  const st=params.get("state");
-  const cty=params.get("county");
-
-  if(from&&years.includes(Number(from))) document.getElementById("fromYear").value=from;
-  if(to&&years.includes(Number(to))) document.getElementById("toYear").value=to;
+  document.getElementById("turnoutLegend").style.display=mode==="turnout"?"flex":"none";
 
   if(mode==="shift"){
-    showMapMode("shift");
-  }else{
-    const targetYr=years.includes(yr)?yr:2024;
-    updateMapForYear(targetYr);
-  }
-
-  if(cty){
-    const cFeature=counties.features.find(f=>getCountyFips(f)===cty);
-    if(cFeature){
-      zoomToCounty(cFeature);
-      openCountyDetailsPopup(cFeature.properties,featureBounds(cFeature).getCenter());
-    }
-  }else if(st&&statesByFips[st]){
-    zoomToState(statesByFips[st]);
-  }
-
-  isRestoringHash=false;
-  syncUrlHash();
-  return true;
-}
-
-map.on("load",async()=>{
-  try{
-    updateResultsLegend();
-    statusBox.textContent="Loading county boundaries...";
-    const boundaryResponse=await fetch("https://cdn.jsdelivr.net/npm/us-atlas@3/counties-10m.json");
-    if(!boundaryResponse.ok) throw new Error("Could not load county boundaries.");
-    const topology=await boundaryResponse.json();
-    counties=topojson.feature(topology,topology.objects.counties);
-    const statesGeo=topojson.feature(topology,topology.objects.states);
-    statesGeo.features.forEach(s=>{
-      statesByFips[String(s.id).padStart(2,"0")]=s;
-    });
-    const stateBorders=topojson.mesh(topology,topology.objects.states,(a,b)=>a!==b);
-
-    statusBox.textContent="Loading historical election results...";
-    const dataResponse=await fetch("./seatcast_presidential_history_2000_2024.json");
-    if(!dataResponse.ok) throw new Error("Could not load historical JSON. Check that the file is uploaded.");
-    const electionData=await dataResponse.json();
-
-    const yearTotals={};
-    electionData.forEach(result=>{
-      const year=Number(result.year);
-      const fips=String(result.fips).padStart(5,"0");
-      if(!resultsByYear[year]) resultsByYear[year]={};
-      resultsByYear[year][fips]=result;
-      if(result.state) stateAbbrByFips[fips.slice(0,2)]=result.state;
-
-      if(!yearTotals[year]) yearTotals[year]={dem:0,rep:0};
-      yearTotals[year].dem+=(Number(result.dem)||0);
-      yearTotals[year].rep+=(Number(result.rep)||0);
-    });
-
-    Object.entries(yearTotals).forEach(([yr,totals])=>{
-      const twoParty=totals.dem+totals.rep;
-      actualNpvByYear[Number(yr)]=twoParty>0?100*(totals.dem-totals.rep)/twoParty:0;
-    });
-
-    // Populate State Filter Dropdown
-    Object.entries(statesByFips)
-      .filter(([fips])=>Number(fips)<=56)
-      .sort((a,b)=>(a[1].properties?.name||"").localeCompare(b[1].properties?.name||""))
-      .forEach(([fips,sFeature])=>{
-        const opt=document.createElement("option");
-        opt.value=fips;
-        const abbr=stateAbbrByFips[fips]?` (${stateAbbrByFips[fips]})`:"";
-        opt.textContent=(sFeature.properties?.name||fips)+abbr;
-        stateFilter.appendChild(opt);
-      });
-
-    map.addSource("counties",{type:"geojson",data:counties});
-    map.addLayer({
-      id:"county-fill",type:"fill",source:"counties",
-      paint:{"fill-color":["get","fillColor"],"fill-opacity":0.92}
-    });
-    map.addLayer({
-      id:"county-outline",type:"line",source:"counties",
-      paint:{"line-color":"#ffffff","line-width":0.3}
-    });
-    map.addLayer({
-      id:"hover-outline",type:"line",source:"counties",
-      filter:["==","mapFips",""],
-      paint:{"line-color":"#101827","line-width":1.8}
-    });
-    map.addLayer({
-      id:"selected-outline",type:"line",source:"counties",
-      filter:["==","mapFips",""],
-      paint:{"line-color":"#f59e0b","line-width":2.6}
-    });
-    map.addSource("state-borders",{
-      type:"geojson",
-      data:{type:"Feature",geometry:stateBorders,properties:{}}
-    });
-    map.addLayer({
-      id:"state-outline",type:"line",source:"state-borders",
-      paint:{
-        "line-color":"#101827",
-        "line-width":["interpolate",["linear"],["zoom"],2,1.6,5,2.8,8,4.0]
-      }
+    document.getElementById("compareControlsTitle").textContent="Compare two presidential elections (Margin Shift)";
+    document.getElementById("compareDescription").textContent="Positive shifts mean movement toward Democrats. Negative shifts mean movement toward Republicans. The comparison uses the two-party vote margin.";
     });
 
     if(!restoreFromUrlHash()){
