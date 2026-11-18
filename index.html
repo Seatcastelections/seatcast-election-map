@@ -1874,6 +1874,201 @@ function showMapMode(mode){
   if(mode==="shift"){
     document.getElementById("compareControlsTitle").textContent="Compare two presidential elections (Margin Shift)";
     document.getElementById("compareDescription").textContent="Positive shifts mean movement toward Democrats. Negative shifts mean movement toward Republicans. The comparison uses the two-party vote margin.";
+  }else if(mode==="turnout"){
+    document.getElementById("compareControlsTitle").textContent="Compare two presidential elections (Turnout Change)";
+    document.getElementById("compareDescription").textContent="Green indicates growth in total ballots cast; amber/orange indicates a drop in total ballots cast between the two elections.";
+  }
+
+  if(!counties) return;
+  if(mode==="shift"){
+    document.getElementById("rankingSort").value="shiftDem";
+    updateMapForCompare();
+  }else if(mode==="turnout"){
+    document.getElementById("rankingSort").value="turnoutUp";
+    updateMapForCompare();
+  }else{
+    document.getElementById("rankingSort").value="dem";
+    updateMapForYear(currentYear);
+  }
+}
+
+document.querySelectorAll(".year-button").forEach(button=>
+  button.addEventListener("click",()=>selectYear(Number(button.dataset.year)))
+);
+document.getElementById("yearSlider").addEventListener("input",event=>
+  selectYear(years[Number(event.target.value)])
+);
+document.getElementById("resultsMode").addEventListener("click",()=>showMapMode("results"));
+document.getElementById("shiftMode").addEventListener("click",()=>showMapMode("shift"));
+document.getElementById("turnoutMode").addEventListener("click",()=>showMapMode("turnout"));
+document.getElementById("fromYear").addEventListener("change",()=>{if(mapMode!=="results")updateMapForCompare();});
+document.getElementById("toYear").addEventListener("change",()=>{if(mapMode!=="results")updateMapForCompare();});
+
+function restoreFromUrlHash(){
+  if(!window.location.hash||window.location.hash.length<2) return false;
+  const params=new URLSearchParams(window.location.hash.slice(1));
+  isRestoringHash=true;
+
+  const c1=params.get("c1"),c2=params.get("c2"),c3=params.get("c3");
+  if(c1) document.getElementById("cutoff1").value=c1;
+  if(c2) document.getElementById("cutoff2").value=c2;
+  if(c3) document.getElementById("cutoff3").value=c3;
+  updateResultsLegend();
+
+  const npv=params.get("npv");
+  if(npv!==null){
+    npvShift=Number(npv)||0;
+    npvSlider.value=Math.max(-15,Math.min(15,npvShift));
+    npvInput.value=npvShift;
+  }
+
+  const mode=params.get("mode");
+  const yr=Number(params.get("year"));
+  const from=params.get("from");
+  const to=params.get("to");
+  const st=params.get("state");
+  const cty=params.get("county");
+
+  if(from&&years.includes(Number(from))) document.getElementById("fromYear").value=from;
+  if(to&&years.includes(Number(to))) document.getElementById("toYear").value=to;
+
+  if(mode==="shift"||mode==="turnout"){
+    showMapMode(mode);
+  }else{
+    const targetYr=years.includes(yr)?yr:2024;
+    updateMapForYear(targetYr);
+  }
+
+  if(cty){
+    const cFeature=counties.features.find(f=>getCountyFips(f)===cty);
+    if(cFeature){
+      zoomToCounty(cFeature);
+      openCountyDetailsPopup(cFeature.properties,featureBounds(cFeature).getCenter());
+    }
+  }else if(st&&statesByFips[st]){
+    zoomToState(statesByFips[st]);
+  }
+
+  isRestoringHash=false;
+  syncUrlHash();
+  return true;
+}
+
+map.on("load",async()=>{
+  try{
+    updateResultsLegend();
+    statusBox.textContent="Loading county boundaries...";
+    const boundaryResponse=await fetch("https://cdn.jsdelivr.net/npm/us-atlas@3/counties-10m.json");
+    if(!boundaryResponse.ok) throw new Error("Could not load county boundaries.");
+    const topology=await boundaryResponse.json();
+    counties=topojson.feature(topology,topology.objects.counties);
+    const statesGeo=topojson.feature(topology,topology.objects.states);
+    statesGeo.features.forEach(s=>{
+      statesByFips[String(s.id).padStart(2,"0")]=s;
+    });
+    const stateBorders=topojson.mesh(topology,topology.objects.states,(a,b)=>a!==b);
+
+    statusBox.textContent="Loading historical election results...";
+    const dataResponse=await fetch("./seatcast_presidential_history_2000_2024.json");
+    if(!dataResponse.ok) throw new Error("Could not load historical JSON. Check that the file is uploaded.");
+    const electionData=await dataResponse.json();
+
+    const yearTotals={};
+    const allFipsSet=new Set();
+
+    electionData.forEach(result=>{
+      const year=Number(result.year);
+      const fips=String(result.fips).padStart(5,"0");
+      allFipsSet.add(fips);
+      if(!resultsByYear[year]) resultsByYear[year]={};
+      resultsByYear[year][fips]=result;
+      if(result.state) stateAbbrByFips[fips.slice(0,2)]=result.state;
+
+      if(!yearTotals[year]) yearTotals[year]={dem:0,rep:0};
+      yearTotals[year].dem+=(Number(result.dem)||0);
+      yearTotals[year].rep+=(Number(result.rep)||0);
+    });
+
+    Object.entries(yearTotals).forEach(([yr,totals])=>{
+      const twoParty=totals.dem+totals.rep;
+      actualNpvByYear[Number(yr)]=twoParty>0?100*(totals.dem-totals.rep)/twoParty:0;
+    });
+
+    // Compute 2000-2024 Bellwether & Flip Streaks per county
+    allFipsSet.forEach(fips=>{
+      let bellwetherMatches=0;
+      let totalYearsPresent=0;
+      let flipCount=0;
+      let prevWinner=null;
+      let w2020=null,w2024=null;
+
+      years.forEach(yr=>{
+        const rec=(resultsByYear[yr]||{})[fips];
+        if(!rec) return;
+        const d=Number(rec.dem)||0,r=Number(rec.rep)||0;
+        if(d+r<=0) return;
+        const w=d>r?"D":"R";
+        totalYearsPresent++;
+        if(w===NATIONAL_WINNER[yr]) bellwetherMatches++;
+        if(prevWinner&&w!==prevWinner) flipCount++;
+        prevWinner=w;
+        if(yr===2020) w2020=w;
+        if(yr===2024) w2024=w;
+      });
+
+      countyHistoryMeta[fips]={
+        isBellwether:totalYearsPresent===years.length&&bellwetherMatches===years.length,
+        flipCount,
+        flipped2024:Boolean(w2020&&w2024&&w2020!==w2024)
+      };
+    });
+
+    // Populate State Filter Dropdown
+    Object.entries(statesByFips)
+      .filter(([fips])=>Number(fips)<=56)
+      .sort((a,b)=>(a[1].properties?.name||"").localeCompare(b[1].properties?.name||""))
+      .forEach(([fips,sFeature])=>{
+        const opt=document.createElement("option");
+        opt.value=fips;
+        const abbr=stateAbbrByFips[fips]?` (${stateAbbrByFips[fips]})`:"";
+        opt.textContent=(sFeature.properties?.name||fips)+abbr;
+        stateFilter.appendChild(opt);
+      });
+
+    map.addSource("counties",{type:"geojson",data:counties});
+    map.addLayer({
+      id:"county-fill",type:"fill",source:"counties",
+      paint:{"fill-color":["get","fillColor"],"fill-opacity":0.92}
+    });
+    map.addLayer({
+      id:"county-outline",type:"line",source:"counties",
+      paint:{"line-color":"#ffffff","line-width":0.3}
+    });
+    map.addLayer({
+      id:"streak-outline",type:"line",source:"counties",
+      filter:["==","mapFips",""],
+      paint:{"line-color":"#eab308","line-width":2.0}
+    });
+    map.addLayer({
+      id:"hover-outline",type:"line",source:"counties",
+      filter:["==","mapFips",""],
+      paint:{"line-color":"#101827","line-width":1.8}
+    });
+    map.addLayer({
+      id:"selected-outline",type:"line",source:"counties",
+      filter:["==","mapFips",""],
+      paint:{"line-color":"#f59e0b","line-width":2.6}
+    });
+    map.addSource("state-borders",{
+      type:"geojson",
+      data:{type:"Feature",geometry:stateBorders,properties:{}}
+    });
+    map.addLayer({
+      id:"state-outline",type:"line",source:"state-borders",
+      paint:{
+        "line-color":"#101827",
+        "line-width":["interpolate",["linear"],["zoom"],2,1.6,5,2.8,8,4.0]
+      }
     });
 
     if(!restoreFromUrlHash()){
@@ -1881,7 +2076,7 @@ function showMapMode(mode){
     }
     statusBox.textContent="Historical election map loaded successfully.";
 
-    // Hover over county to see what it is
+    // Hover over county
     map.on("mousemove","county-fill",event=>{
       map.getCanvas().style.cursor="pointer";
       const p=event.features[0].properties;
@@ -1891,7 +2086,11 @@ function showMapMode(mode){
       const title=(p.countyName||"County")+(stateDisplay?", "+stateDisplay:"");
       let statHtml=`<div class="tt-stat tt-neutral">No data</div>`;
 
-      if(mapMode==="shift"&&p.shiftAvailable){
+      if(mapMode==="turnout"&&p.turnoutAvailable){
+        const pct=Number(p.turnoutPct);
+        const cls=pct>=0?"tt-green":"tt-amber";
+        statHtml=`<div class="tt-stat ${cls}">${p.fromYear}→${p.toYear}: ${pct>=0?"+":""}${pct.toFixed(2)}% ballots</div>`;
+      }else if(mapMode==="shift"&&p.shiftAvailable){
         const s=Number(p.shift);
         const cls=s>0?"tt-dem":s<0?"tt-rep":"tt-neutral";
         const txt=s>0?`D+${s.toFixed(2)} shift`:s<0?`R+${Math.abs(s).toFixed(2)} shift`:"No change";
@@ -1903,6 +2102,10 @@ function showMapMode(mode){
         statHtml=`<div class="tt-stat ${cls}">${currentYear}: ${fmtMarginStr(m)}${adjLabel}</div>`;
       }
 
+      const badgeHtml=p.isBellwether
+        ?`<div class="tt-badge">★ 2000–2024 Bellwether</div>`
+        :(p.flipCount>=2?`<div class="tt-badge">Swing County (${p.flipCount} flips)</div>`:"");
+
       const hint=map.getZoom()<STATE_ZOOM_THRESHOLD&&!selectedStateFips
         ?`Click to zoom to ${esc(p.stateFullName||stateDisplay||"state")}`
         :"Click for county details & history";
@@ -1910,6 +2113,7 @@ function showMapMode(mode){
       hoverTooltip.innerHTML=`
         <div class="tt-title">${esc(title)}</div>
         ${statHtml}
+        ${badgeHtml}
         <div class="tt-hint">${hint}</div>
       `;
       hoverTooltip.style.display="block";
@@ -1917,8 +2121,8 @@ function showMapMode(mode){
       const mapRect=map.getContainer().getBoundingClientRect();
       let left=event.point.x+14;
       let top=event.point.y+14;
-      if(left+235>mapRect.width) left=event.point.x-235;
-      if(top+85>mapRect.height) top=event.point.y-85;
+      if(left+245>mapRect.width) left=event.point.x-245;
+      if(top+95>mapRect.height) top=event.point.y-95;
       hoverTooltip.style.left=Math.max(8,left)+"px";
       hoverTooltip.style.top=Math.max(8,top)+"px";
     });
