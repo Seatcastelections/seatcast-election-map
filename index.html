@@ -85,7 +85,7 @@ h1 { margin:0 0 7px; font-size:25px; }
   font-size:13px;
   line-height:1.4;
   box-shadow:0 4px 12px rgba(0,0,0,0.2);
-  max-width:240px;
+  max-width:250px;
 }
 #hoverTooltip .tt-title { font-weight:700; font-size:13.5px; }
 #hoverTooltip .tt-stat { margin-top:2px; font-weight:700; }
@@ -94,8 +94,8 @@ h1 { margin:0 0 7px; font-size:25px; }
 #hoverTooltip .tt-neutral { color:#d1d5db; }
 #hoverTooltip .tt-hint { color:#94a3b8; font-size:11px; margin-top:3px; }
 
-/* Year & Shift Controls */
-.year-bar,.shift-controls { background:white; border:1px solid #dce2ea; border-radius:10px; padding:16px; margin-top:14px; box-shadow:0 2px 8px rgba(0,0,0,.05); }
+/* Year, NPV Simulator & Custom Margin Controls */
+.year-bar,.shift-controls,.control-card { background:white; border:1px solid #dce2ea; border-radius:10px; padding:16px; margin-top:14px; box-shadow:0 2px 8px rgba(0,0,0,.05); }
 .year-heading { display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:12px; }
 .year-heading-left { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
 .year-heading strong { font-size:17px; }
@@ -119,6 +119,95 @@ h1 { margin:0 0 7px; font-size:25px; }
 .year-button.active { background:#172b4d; border-color:#172b4d; color:white; }
 #yearSlider { width:100%; cursor:pointer; accent-color:#2166ac; }
 .slider-labels { display:flex; justify-content:space-between; color:#667085; font-size:12px; margin-top:5px; }
+
+.sim-grid {
+  display:grid;
+  grid-template-columns:1.25fr 1fr;
+  gap:14px;
+}
+.control-card-header {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:8px;
+  margin-bottom:10px;
+  flex-wrap:wrap;
+}
+.control-card-header strong { font-size:15.5px; }
+.mini-btn {
+  padding:5px 10px;
+  border:1px solid #cbd5e1;
+  border-radius:6px;
+  background:#f8fafc;
+  color:#263449;
+  font-weight:700;
+  font-size:12px;
+  cursor:pointer;
+}
+.mini-btn:hover { background:#e8f1fc; }
+
+.npv-status-row {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:8px;
+  font-size:13px;
+  background:#f8fafc;
+  border:1px solid #e2e8f0;
+  border-radius:7px;
+  padding:8px 11px;
+  margin-bottom:10px;
+}
+.npv-slider-row {
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+#npvSlider { flex:1; cursor:pointer; accent-color:#172b4d; }
+#npvInput {
+  width:78px;
+  padding:7px 8px;
+  border:1px solid #cbd5e1;
+  border-radius:6px;
+  font-size:13.5px;
+  font-weight:700;
+  text-align:center;
+}
+.npv-quick-btns {
+  display:flex;
+  gap:6px;
+  flex-wrap:wrap;
+  margin-top:10px;
+}
+
+.cutoff-inputs {
+  display:grid;
+  grid-template-columns:repeat(3, 1fr);
+  gap:10px;
+  margin-top:8px;
+}
+.cutoff-field label {
+  display:block;
+  font-size:12px;
+  font-weight:700;
+  color:#475467;
+  margin-bottom:4px;
+}
+.cutoff-field input {
+  width:100%;
+  padding:8px;
+  border:1px solid #cbd5e1;
+  border-radius:6px;
+  font-size:14px;
+  font-weight:700;
+}
+.control-hint {
+  color:#667085;
+  font-size:12px;
+  margin-top:8px;
+  line-height:1.4;
+}
 
 .shift-controls { display:none; }
 .shift-controls p { margin:12px 0; }
@@ -172,6 +261,9 @@ h1 { margin:0 0 7px; font-size:25px; }
 #errorBox { display:none; background:#fee2e2; color:#991b1b; padding:12px; margin:12px 20px; border-radius:7px; white-space:pre-wrap; overflow-wrap:anywhere; }
 footer { padding:20px; background:#101827; color:#aab4c5; text-align:center; font-size:13px; margin-top:24px; }
 
+@media(max-width:900px) {
+  .sim-grid { grid-template-columns:1fr; }
+}
 @media(max-width:850px) {
   .summary-bar { grid-template-columns:repeat(2, 1fr); }
   .explorer-grid { grid-template-columns:1fr 1fr; }
@@ -239,25 +331,76 @@ footer { padding:20px; background:#101827; color:#aab4c5; text-align:center; fon
   <div id="map"></div>
 </div>
 
-<div class="year-bar">
-  <div class="year-heading">
-    <div class="year-heading-left">
-      <strong>Select an election year</strong>
-      <button id="playButton" type="button">▶ Play Timelapse</button>
+<div id="resultsControls">
+  <div class="year-bar">
+    <div class="year-heading">
+      <div class="year-heading-left">
+        <strong>Select an election year</strong>
+        <button id="playButton" type="button">▶ Play Timelapse</button>
+      </div>
+      <span id="selectedYear">2024</span>
     </div>
-    <span id="selectedYear">2024</span>
+    <div class="year-buttons">
+      <button class="year-button" data-year="2000">2000</button>
+      <button class="year-button" data-year="2004">2004</button>
+      <button class="year-button" data-year="2008">2008</button>
+      <button class="year-button" data-year="2012">2012</button>
+      <button class="year-button" data-year="2016">2016</button>
+      <button class="year-button" data-year="2020">2020</button>
+      <button class="year-button active" data-year="2024">2024</button>
+    </div>
+    <input type="range" id="yearSlider" min="0" max="6" step="1" value="6" aria-label="Select election year">
+    <div class="slider-labels"><span>2000</span><span>2024</span></div>
   </div>
-  <div class="year-buttons">
-    <button class="year-button" data-year="2000">2000</button>
-    <button class="year-button" data-year="2004">2004</button>
-    <button class="year-button" data-year="2008">2008</button>
-    <button class="year-button" data-year="2012">2012</button>
-    <button class="year-button" data-year="2016">2016</button>
-    <button class="year-button" data-year="2020">2020</button>
-    <button class="year-button active" data-year="2024">2024</button>
+
+  <div class="sim-grid">
+    <div class="control-card">
+      <div class="control-card-header">
+        <strong>National Popular Vote (NPV) Shift</strong>
+        <button id="resetNpvBtn" class="mini-btn" type="button">Reset (0.0)</button>
+      </div>
+      <div class="npv-status-row">
+        <span>Actual NPV: <strong id="actualNpvText">—</strong></span>
+        <span>Simulated NPV: <strong id="simNpvText">—</strong></span>
+      </div>
+      <div class="npv-slider-row">
+        <span style="font-size:12px;font-weight:700;color:#c62828">R+15</span>
+        <input type="range" id="npvSlider" min="-15" max="15" step="0.5" value="0" aria-label="NPV shift">
+        <span style="font-size:12px;font-weight:700;color:#2166ac">D+15</span>
+        <input type="number" id="npvInput" min="-50" max="50" step="0.5" value="0" aria-label="NPV shift value">
+      </div>
+      <div class="npv-quick-btns">
+        <button class="mini-btn npv-preset" data-shift="-5" type="button">R+5 Shift</button>
+        <button class="mini-btn npv-preset" data-shift="-2" type="button">R+2 Shift</button>
+        <button id="tieNpvBtn" class="mini-btn" type="button">50/50 NPV Tie</button>
+        <button class="mini-btn npv-preset" data-shift="2" type="button">D+2 Shift</button>
+        <button class="mini-btn npv-preset" data-shift="5" type="button">D+5 Shift</button>
+      </div>
+      <div class="control-hint">Applies a uniform shift to every county's two-party margin (+ shifts toward Democrats, − shifts toward Republicans).</div>
+    </div>
+
+    <div class="control-card">
+      <div class="control-card-header">
+        <strong>Custom Margin Cutoffs (Points)</strong>
+        <button id="resetCutoffsBtn" class="mini-btn" type="button">Standard (1 / 5 / 15)</button>
+      </div>
+      <div class="cutoff-inputs">
+        <div class="cutoff-field">
+          <label for="cutoff1">Tilt / Lean</label>
+          <input type="number" id="cutoff1" min="0.1" max="50" step="0.5" value="1">
+        </div>
+        <div class="cutoff-field">
+          <label for="cutoff2">Lean / Likely</label>
+          <input type="number" id="cutoff2" min="0.5" max="75" step="0.5" value="5">
+        </div>
+        <div class="cutoff-field">
+          <label for="cutoff3">Likely / Safe</label>
+          <input type="number" id="cutoff3" min="1" max="99" step="0.5" value="15">
+        </div>
+      </div>
+      <div class="control-hint" id="cutoffSummaryHint">Shading tiers: 0–1 pts, 1–5 pts, 5–15 pts, and over 15 pts.</div>
+    </div>
   </div>
-  <input type="range" id="yearSlider" min="0" max="6" step="1" value="6" aria-label="Select election year">
-  <div class="slider-labels"><span>2000</span><span>2024</span></div>
 </div>
 
 <div class="shift-controls" id="shiftControls">
@@ -282,17 +425,7 @@ footer { padding:20px; background:#101827; color:#aab4c5; text-align:center; fon
 </div>
 
 <div class="legend">
-  <div id="resultsLegend">
-    <div class="legend-range"><div class="swatch" style="background:#084594"></div>D+30+</div>
-    <div class="legend-range"><div class="swatch" style="background:#2171b5"></div>D+15–30</div>
-    <div class="legend-range"><div class="swatch" style="background:#6baed6"></div>D+5–15</div>
-    <div class="legend-range"><div class="swatch" style="background:#bdd7e7"></div>D+&lt;5</div>
-    <div class="legend-range"><div class="swatch" style="background:#fcae91"></div>R+&lt;5</div>
-    <div class="legend-range"><div class="swatch" style="background:#fb6a4a"></div>R+5–15</div>
-    <div class="legend-range"><div class="swatch" style="background:#de2d26"></div>R+15–30</div>
-    <div class="legend-range"><div class="swatch" style="background:#a50f15"></div>R+30+</div>
-    <div class="legend-range"><div class="swatch" style="background:#d1d5db"></div>No data</div>
-  </div>
+  <div id="resultsLegend"></div>
   <div id="shiftLegend">
     <div class="legend-range"><div class="swatch" style="background:#145a96"></div>D+6 or more shift</div>
     <div class="legend-range"><div class="swatch" style="background:#5b9bd5"></div>D+3 to D+6 shift</div>
@@ -366,6 +499,8 @@ const hoverTooltip=document.getElementById("hoverTooltip");
 const resetMapButton=document.getElementById("resetMapButton");
 const playButton=document.getElementById("playButton");
 const stateFilter=document.getElementById("stateFilter");
+const npvSlider=document.getElementById("npvSlider");
+const npvInput=document.getElementById("npvInput");
 
 function showError(message){
   errorBox.style.display="block";
@@ -392,13 +527,65 @@ let counties=null;
 let statesByFips={};
 let stateAbbrByFips={};
 let resultsByYear={};
+let actualNpvByYear={};
 let currentYear=2024;
+let npvShift=0;
 let mapMode="results";
 let selectedStateFips="";
 let selectedCountyFips="";
 let activePopup=null;
 let playInterval=null;
 let isRestoringHash=false;
+
+// --- Custom Margin Cutoffs ---
+function getMarginCutoffs(){
+  const c1=Math.max(0.1,Number(document.getElementById("cutoff1").value)||1);
+  const c2=Math.max(c1+0.1,Number(document.getElementById("cutoff2").value)||5);
+  const c3=Math.max(c2+0.1,Number(document.getElementById("cutoff3").value)||15);
+  return [c1,c2,c3];
+}
+
+function fmtCutoff(n){
+  return Number.isInteger(n)?String(n):n.toFixed(1);
+}
+
+function updateResultsLegend(){
+  const [c1,c2,c3]=getMarginCutoffs();
+  const s1=fmtCutoff(c1),s2=fmtCutoff(c2),s3=fmtCutoff(c3);
+
+  document.getElementById("cutoffSummaryHint").textContent=
+    `Shading tiers: 0–${s1} pts, ${s1}–${s2} pts, ${s2}–${s3} pts, and over ${s3} pts.`;
+
+  document.getElementById("resultsLegend").innerHTML=`
+    <div class="legend-range"><div class="swatch" style="background:#084594"></div>D+${s3}+</div>
+    <div class="legend-range"><div class="swatch" style="background:#2171b5"></div>D+${s2}–${s3}</div>
+    <div class="legend-range"><div class="swatch" style="background:#6baed6"></div>D+${s1}–${s2}</div>
+    <div class="legend-range"><div class="swatch" style="background:#bdd7e7"></div>D+0–${s1}</div>
+    <div class="legend-range"><div class="swatch" style="background:#fcae91"></div>R+0–${s1}</div>
+    <div class="legend-range"><div class="swatch" style="background:#fb6a4a"></div>R+${s1}–${s2}</div>
+    <div class="legend-range"><div class="swatch" style="background:#de2d26"></div>R+${s2}–${s3}</div>
+    <div class="legend-range"><div class="swatch" style="background:#a50f15"></div>R+${s3}+</div>
+    <div class="legend-range"><div class="swatch" style="background:#d1d5db"></div>No data</div>
+  `;
+}
+
+function getResultsColor(margin,winner){
+  if(margin===null||margin===undefined||Number.isNaN(margin)){
+    if(winner==="D") return "#2171b5";
+    if(winner==="R") return "#de2d26";
+    return "#d1d5db";
+  }
+  const [c1,c2,c3]=getMarginCutoffs();
+  if(margin>c3) return "#084594";
+  if(margin>c2) return "#2171b5";
+  if(margin>c1) return "#6baed6";
+  if(margin>0) return "#bdd7e7";
+  if(margin===0) return "#d1d5db";
+  if(margin>=-c1) return "#fcae91";
+  if(margin>=-c2) return "#fb6a4a";
+  if(margin>=-c3) return "#de2d26";
+  return "#a50f15";
+}
 
 // --- URL Hash State Sync ---
 function syncUrlHash(){
@@ -407,9 +594,16 @@ function syncUrlHash(){
   params.set("mode",mapMode);
   if(mapMode==="results"){
     params.set("year",currentYear);
+    if(npvShift!==0) params.set("npv",npvShift);
   }else{
     params.set("from",document.getElementById("fromYear").value);
     params.set("to",document.getElementById("toYear").value);
+  }
+  const [c1,c2,c3]=getMarginCutoffs();
+  if(c1!==1||c2!==5||c3!==15){
+    params.set("c1",c1);
+    params.set("c2",c2);
+    params.set("c3",c3);
   }
   if(selectedStateFips) params.set("state",selectedStateFips);
   if(selectedCountyFips) params.set("county",selectedCountyFips);
@@ -428,29 +622,11 @@ document.getElementById("shareButton").addEventListener("click",async()=>{
   setTimeout(()=>{btn.textContent="Copy Share Link";},2000);
 });
 
-// --- Shaded Margin Color Scale ---
-function getResultsColor(margin,winner){
-  if(margin===null||margin===undefined||Number.isNaN(margin)){
-    if(winner==="D") return "#2171b5";
-    if(winner==="R") return "#de2d26";
-    return "#d1d5db";
-  }
-  if(margin>=30) return "#084594";
-  if(margin>=15) return "#2171b5";
-  if(margin>=5) return "#6baed6";
-  if(margin>0) return "#bdd7e7";
-  if(margin===0) return "#d1d5db";
-  if(margin>-5) return "#fcae91";
-  if(margin>-15) return "#fb6a4a";
-  if(margin>-30) return "#de2d26";
-  return "#a50f15";
-}
-
 function showCountyPopup(lngLat,html,fips){
   if(activePopup) activePopup.remove();
   selectedCountyFips=fips||"";
   syncUrlHash();
-  activePopup=new maplibregl.Popup({maxWidth:"290px"}).setLngLat(lngLat).setHTML(html).addTo(map);
+  activePopup=new maplibregl.Popup({maxWidth:"295px"}).setLngLat(lngLat).setHTML(html).addTo(map);
   activePopup.on("close",()=>{
     selectedCountyFips="";
     syncUrlHash();
@@ -548,6 +724,49 @@ function getElectionFips(fips){
   return fips;
 }
 
+function fmtMarginStr(m){
+  if(m===null||m===undefined||Number.isNaN(m)) return "No data";
+  if(Math.abs(m)<0.005) return "Tied";
+  return m>0?`D+${m.toFixed(2)}`:`R+${Math.abs(m).toFixed(2)}`;
+}
+
+// --- NPV Shift Helpers ---
+function setNpvShift(val){
+  const clamped=Math.max(-50,Math.min(50,Number(val)||0));
+  npvShift=Math.round(clamped*100)/100;
+  npvSlider.value=Math.max(-15,Math.min(15,npvShift));
+  npvInput.value=npvShift;
+  if(counties&&mapMode==="results"){
+    updateMapForYear(currentYear);
+  }
+}
+
+npvSlider.addEventListener("input",e=>setNpvShift(e.target.value));
+npvInput.addEventListener("change",e=>setNpvShift(e.target.value));
+document.getElementById("resetNpvBtn").addEventListener("click",()=>setNpvShift(0));
+document.querySelectorAll(".npv-preset").forEach(btn=>{
+  btn.addEventListener("click",()=>setNpvShift(Number(btn.dataset.shift)));
+});
+document.getElementById("tieNpvBtn").addEventListener("click",()=>{
+  const actual=actualNpvByYear[currentYear]||0;
+  setNpvShift(-actual);
+});
+
+// Custom cutoffs listeners
+["cutoff1","cutoff2","cutoff3"].forEach(id=>{
+  document.getElementById(id).addEventListener("change",()=>{
+    updateResultsLegend();
+    if(counties&&mapMode==="results") updateMapForYear(currentYear);
+  });
+});
+document.getElementById("resetCutoffsBtn").addEventListener("click",()=>{
+  document.getElementById("cutoff1").value=1;
+  document.getElementById("cutoff2").value=5;
+  document.getElementById("cutoff3").value=15;
+  updateResultsLegend();
+  if(counties&&mapMode==="results") updateMapForYear(currentYear);
+});
+
 // --- Dynamic Summary Scoreboard ---
 function updateSummaryBar(){
   const stateObj=selectedStateFips?statesByFips[selectedStateFips]:null;
@@ -562,25 +781,37 @@ function updateSummaryBar(){
       if(selectedStateFips&&!fips.startsWith(selectedStateFips)) return;
       const d=Number(r.dem)||0;
       const rep=Number(r.rep)||0;
-      const tot=Number(r.total)||(d+rep);
-      demVotes+=d;
-      repVotes+=rep;
+      const twoParty=d+rep;
+      const tot=Number(r.total)||twoParty;
+
+      if(twoParty>0){
+        const rawM=100*(d-rep)/twoParty;
+        const adjM=Math.max(-100,Math.min(100,rawM+npvShift));
+        const adjDemShare=(100+adjM)/200;
+        const adjD=twoParty*adjDemShare;
+        const adjR=twoParty-adjD;
+        demVotes+=adjD;
+        repVotes+=adjR;
+        if(adjM>0) demCounties++;
+        else if(adjM<0) repCounties++;
+      }
       totalVotes+=tot;
-      if(d>rep) demCounties++;
-      else if(rep>d) repCounties++;
     });
 
-    const twoParty=demVotes+repVotes;
-    const demShare=twoParty>0?(100*demVotes/twoParty).toFixed(1)+"%":"—";
-    const repShare=twoParty>0?(100*repVotes/twoParty).toFixed(1)+"%":"—";
+    const twoPartyTotal=demVotes+repVotes;
+    const demShare=twoPartyTotal>0?(100*demVotes/twoPartyTotal).toFixed(1)+"%":"—";
+    const repShare=twoPartyTotal>0?(100*repVotes/twoPartyTotal).toFixed(1)+"%":"—";
+    const shiftTag=npvShift!==0?` • NPV Shift ${fmtMarginStr(npvShift)}`:"";
 
     document.getElementById("sumScopeLabel").textContent=selectedStateFips?"Selected State":"National Overview";
-    document.getElementById("sumScopeSub").textContent=`${currentYear} • ${totalVotes.toLocaleString()} total votes`;
-    document.getElementById("sumDemLabel").textContent="Democratic Vote";
-    document.getElementById("sumDemVal").textContent=`${demVotes.toLocaleString()} (${demShare})`;
+    document.getElementById("sumScopeSub").textContent=`${currentYear}${shiftTag} • ${Math.round(totalVotes).toLocaleString()} votes`;
+    document.getElementById("sumDemLabel").textContent=npvShift!==0?"Simulated Democratic":"Democratic Vote";
+    document.getElementById("sumDemVal").className="summary-value text-dem";
+    document.getElementById("sumDemVal").textContent=`${Math.round(demVotes).toLocaleString()} (${demShare})`;
     document.getElementById("sumDemSub").textContent="Two-party share";
-    document.getElementById("sumRepLabel").textContent="Republican Vote";
-    document.getElementById("sumRepVal").textContent=`${repVotes.toLocaleString()} (${repShare})`;
+    document.getElementById("sumRepLabel").textContent=npvShift!==0?"Simulated Republican":"Republican Vote";
+    document.getElementById("sumRepVal").className="summary-value text-rep";
+    document.getElementById("sumRepVal").textContent=`${Math.round(repVotes).toLocaleString()} (${repShare})`;
     document.getElementById("sumRepSub").textContent="Two-party share";
     document.getElementById("sumCountiesLabel").textContent="Counties Won";
     document.getElementById("sumCountiesVal").innerHTML=`<span class="text-dem">D: ${demCounties.toLocaleString()}</span> &nbsp;|&nbsp; <span class="text-rep">R: ${repCounties.toLocaleString()}</span>`;
@@ -609,19 +840,17 @@ function updateSummaryBar(){
     const oldM=(oldD+oldR)>0?100*(oldD-oldR)/(oldD+oldR):0;
     const newM=(newD+newR)>0?100*(newD-newR)/(newD+newR):0;
     const aggShift=newM-oldM;
-
-    const fmtMargin=m=>m>0?`D+${m.toFixed(2)}`:m<0?`R+${Math.abs(m).toFixed(2)}`:"Tied";
     const shiftCls=aggShift>0?"text-dem":aggShift<0?"text-rep":"";
 
     document.getElementById("sumScopeLabel").textContent=selectedStateFips?"State Shift":"National Shift";
     document.getElementById("sumScopeSub").textContent=`${fromYear} → ${toYear} comparison`;
     document.getElementById("sumDemLabel").textContent="Aggregate Shift";
     document.getElementById("sumDemVal").className="summary-value "+shiftCls;
-    document.getElementById("sumDemVal").textContent=fmtMargin(aggShift);
+    document.getElementById("sumDemVal").textContent=fmtMarginStr(aggShift);
     document.getElementById("sumDemSub").textContent=aggShift>0?"Moved toward Democrats":aggShift<0?"Moved toward Republicans":"No net shift";
     document.getElementById("sumRepLabel").textContent="Margin Change";
     document.getElementById("sumRepVal").className="summary-value";
-    document.getElementById("sumRepVal").textContent=`${fmtMargin(oldM)} → ${fmtMargin(newM)}`;
+    document.getElementById("sumRepVal").textContent=`${fmtMarginStr(oldM)} → ${fmtMarginStr(newM)}`;
     document.getElementById("sumRepSub").textContent="Two-party margin";
     document.getElementById("sumCountiesLabel").textContent="County Direction";
     document.getElementById("sumCountiesVal").innerHTML=`<span class="text-dem">D+: ${shiftDCount.toLocaleString()}</span> &nbsp;|&nbsp; <span class="text-rep">R+: ${shiftRCount.toLocaleString()}</span>`;
@@ -632,7 +861,16 @@ function updateSummaryBar(){
 function updateMapForYear(year){
   currentYear=Number(year);
   const electionResults=resultsByYear[currentYear]||{};
-  document.getElementById("mapTitle").textContent=currentYear+" Presidential Election";
+  const actualNpv=actualNpvByYear[currentYear]??0;
+  const simNpv=actualNpv+npvShift;
+
+  document.getElementById("actualNpvText").textContent=fmtMarginStr(actualNpv);
+  const simNpvEl=document.getElementById("simNpvText");
+  simNpvEl.textContent=fmtMarginStr(simNpv);
+  simNpvEl.className=simNpv>0?"text-dem":simNpv<0?"text-rep":"";
+
+  const shiftHeadline=npvShift!==0?` (${fmtMarginStr(npvShift)} NPV Shift)`:"";
+  document.getElementById("mapTitle").textContent=currentYear+" Presidential Election"+shiftHeadline;
   document.getElementById("selectedYear").textContent=currentYear;
   document.getElementById("yearSlider").value=years.indexOf(currentYear);
 
@@ -646,17 +884,19 @@ function updateMapForYear(year){
     const stateFeature=statesByFips[stateFips];
     const result=electionResults[getElectionFips(fips)];
     const p=feature.properties;
-    const margin=result&&(Number(result.dem)+Number(result.rep))>0
+    const rawMargin=result&&(Number(result.dem)+Number(result.rep))>0
       ?100*(Number(result.dem)-Number(result.rep))/(Number(result.dem)+Number(result.rep)):null;
+    const adjMargin=rawMargin!==null?Math.max(-100,Math.min(100,rawMargin+npvShift)):null;
 
-    p.winner=result?result.winner:"NA";
-    p.fillColor=!result?"#d1d5db":getResultsColor(margin,result.winner);
+    p.winner=adjMargin!==null?(adjMargin>0?"D":adjMargin<0?"R":"T"):(result?result.winner:"NA");
+    p.fillColor=!result?"#d1d5db":getResultsColor(adjMargin,p.winner);
     p.dem=result?result.dem:null;
     p.rep=result?result.rep:null;
     p.total=result?result.total:null;
     p.demPct=result?result.demPct:null;
     p.repPct=result?result.repPct:null;
-    p.margin=margin;
+    p.rawMargin=rawMargin;
+    p.margin=adjMargin;
     p.countyName=result?result.county:(feature.properties.name||"County "+fips);
     p.state=result?result.state:(stateAbbrByFips[stateFips]||"");
     p.stateFullName=stateFeature&&stateFeature.properties?stateFeature.properties.name:"";
@@ -671,7 +911,7 @@ function updateMapForYear(year){
   updateSummaryBar();
   refreshCountyExplorer();
   syncUrlHash();
-  statusBox.textContent="Showing "+currentYear+" presidential results | "+Object.keys(electionResults).length+" county records in the data.";
+  statusBox.textContent="Showing "+currentYear+" presidential results"+(npvShift!==0?` with ${fmtMarginStr(npvShift)} uniform NPV shift`:"")+" | "+Object.keys(electionResults).length+" county records.";
 }
 
 function updateMapForShift(){
@@ -723,6 +963,7 @@ function updateMapForShift(){
     p.repPct=newResult.repPct;
     p.countyName=newResult.county;
     p.state=newResult.state;
+    p.rawMargin=newMargin;
     p.margin=newMargin;
 
     if(Math.abs(shift)<1) p.fillColor="#d1d5db";
@@ -751,7 +992,6 @@ function countyLabel(feature){
 }
 function featureBounds(feature){
   const fipsStr=String(feature.id).padStart(2,"0");
-  // Clean framing for Alaska without Aleutian antimeridian wrap distortion
   if(fipsStr==="02"){
     return new maplibregl.LngLatBounds([-171.0,51.2],[-129.9,71.5]);
   }
@@ -826,7 +1066,7 @@ function buildHistoryChartHtml(mapFips){
     }
     const isHighlighted=mapMode==="results"?yr===currentYear:(yr===activeFrom||yr===activeTo);
     const shortYr="'"+String(yr).slice(2);
-    const labelTxt=margin===null?"No data":margin>0?`D+${margin.toFixed(1)}`:margin<0?`R+${Math.abs(margin).toFixed(1)}`:"Tied";
+    const labelTxt=margin===null?"No data":fmtMarginStr(margin);
 
     let topBar="",bottomBar="";
     if(margin!==null&&margin>0){
@@ -837,7 +1077,7 @@ function buildHistoryChartHtml(mapFips){
       bottomBar=`<div class="history-bar-r" style="height:${pct}%"></div>`;
     }
 
-    return `<div class="history-col" title="${yr}: ${labelTxt}">
+    return `<div class="history-col" title="${yr} actual: ${labelTxt}">
       <div class="history-half-top">${topBar}</div>
       <div class="history-half-bottom">${bottomBar}</div>
       <div class="history-yr ${isHighlighted?'active-yr':''}">${shortYr}</div>
@@ -845,7 +1085,7 @@ function buildHistoryChartHtml(mapFips){
   }).join("");
 
   return `<div class="popup-chart-wrap">
-    <div class="popup-chart-title">Two-party margin history (2000–2024)</div>
+    <div class="popup-chart-title">Actual margin history (2000–2024)</div>
     <div class="history-chart">${cols}</div>
   </div>`;
 }
@@ -864,15 +1104,13 @@ function openCountyDetailsPopup(p,lngLat){
     }
     const direction=p.shift>0?"toward Democrats":p.shift<0?"toward Republicans":"No change";
     const startingMargin=p.margin-p.shift;
-    const startingText=startingMargin>0?"D+":startingMargin<0?"R+":"Tied";
-    const endingText=p.margin>0?"D+":p.margin<0?"R+":"Tied";
     const html=`<div style="font-family:Arial;min-width:230px">
       <strong style="font-size:16px">${esc(p.countyName)}, ${esc(p.state||p.stateFullName)}</strong>
       <div style="color:#667085;margin:4px 0 8px">${p.fromYear} to ${p.toYear}</div>
       <div>Shift: <strong>${Math.abs(p.shift).toFixed(2)} points</strong> (${direction})</div>
       <hr style="border:none;border-top:1px solid #e5eaf0;margin:8px 0">
-      <div>Starting (${p.fromYear}): ${startingText} ${Math.abs(startingMargin).toFixed(2)}</div>
-      <div>Ending (${p.toYear}): ${endingText} ${Math.abs(p.margin).toFixed(2)}</div>
+      <div>Starting (${p.fromYear}): ${fmtMarginStr(startingMargin)}</div>
+      <div>Ending (${p.toYear}): ${fmtMarginStr(p.margin)}</div>
       ${chartHtml}
     </div>`;
     showCountyPopup(lngLat,html,p.mapFips);
@@ -888,16 +1126,23 @@ function openCountyDetailsPopup(p,lngLat){
     return;
   }
 
-  const margin=Number(p.margin);
-  const marginText=margin>0?"D+"+margin.toFixed(2):margin<0?"R+"+Math.abs(margin).toFixed(2):"Tied";
-  const html=`<div style="font-family:Arial;min-width:230px">
+  const rawMargin=Number(p.rawMargin);
+  const adjMargin=Number(p.margin);
+  const npvRow=npvShift!==0
+    ?`<div style="margin-top:4px;padding:5px 7px;background:#f8fafc;border-radius:5px;border:1px solid #e2e8f0">
+        <div>Actual margin: <strong>${fmtMarginStr(rawMargin)}</strong></div>
+        <div>NPV-shifted (${fmtMarginStr(npvShift)}): <strong>${fmtMarginStr(adjMargin)}</strong></div>
+      </div>`
+    :`<strong>Two-party margin: ${fmtMarginStr(rawMargin)}</strong>`;
+
+  const html=`<div style="font-family:Arial;min-width:235px">
     <strong style="font-size:16px">${esc(p.countyName||"County")}, ${esc(p.state||p.stateFullName)}</strong>
     <div style="color:#667085;margin:4px 0 8px">${p.electionYear} Presidential Election</div>
     <div style="color:#2166ac">Democratic: ${Number(p.dem).toLocaleString()} (${Number(p.demPct).toFixed(2)}%)</div>
     <div style="color:#c62828">Republican: ${Number(p.rep).toLocaleString()} (${Number(p.repPct).toFixed(2)}%)</div>
     <hr style="border:none;border-top:1px solid #e5eaf0;margin:8px 0">
-    <div>Total votes: ${Number(p.total).toLocaleString()}</div>
-    <strong>Two-party margin: ${marginText}</strong>
+    <div style="margin-bottom:4px">Total votes: ${Number(p.total).toLocaleString()}</div>
+    ${npvRow}
     ${chartHtml}
   </div>`;
   showCountyPopup(lngLat,html,p.mapFips);
@@ -946,15 +1191,16 @@ function refreshCountyExplorer(){
   const to=document.getElementById("toYear").value;
   const stateObj=selectedStateFips?statesByFips[selectedStateFips]:null;
   const scopePrefix=stateObj&&stateObj.properties?stateObj.properties.name+" — ":"";
+  const shiftSuffix=mapMode==="results"&&npvShift!==0?` (${fmtMarginStr(npvShift)} NPV Shift)`:"";
 
   document.getElementById("rankingTitle").textContent=
     mapMode==="results"
-      ?`County rankings — ${scopePrefix}${currentYear}`
+      ?`County rankings — ${scopePrefix}${currentYear}${shiftSuffix}`
       :`County rankings — ${scopePrefix}${from} to ${to}`;
   document.getElementById("rankingCount").textContent=rows.length.toLocaleString()+" counties";
   document.getElementById("rankingNote").textContent=
     mapMode==="results"
-      ?(rows.length?"Margins are calculated from Democratic and Republican votes only. Select a row to zoom to that county.":"Switch to County Shift mode to rank historical shifts and party switches.")
+      ?(rows.length?"Margins reflect Democratic vs. Republican votes (including any active NPV shift). Select a row to zoom to that county.":"Switch to County Shift mode to rank historical shifts and party switches.")
       :"Positive shifts indicate movement toward Democrats; negative shifts indicate movement toward Republicans. Select a row to zoom to it.";
 
   const body=document.getElementById("rankingBody");
@@ -966,7 +1212,7 @@ function refreshCountyExplorer(){
   const limit=selectedStateFips?rows.length:100;
   body.innerHTML=rows.slice(0,limit).map((f,i)=>{
     const p=f.properties,m=Number(p.margin),s=Number(p.shift);
-    let value=m>0?"D+"+m.toFixed(2):m<0?"R+"+Math.abs(m).toFixed(2):"Tied";
+    let value=fmtMarginStr(m);
     let colorClass=m>=0?"party-dem":"party-rep";
 
     if(sort==="shiftDem"||sort==="shiftRep"){
@@ -1030,7 +1276,7 @@ function showMapMode(mode){
   mapMode=mode;
   document.getElementById("resultsMode").classList.toggle("active",mode==="results");
   document.getElementById("shiftMode").classList.toggle("active",mode==="shift");
-  document.querySelector(".year-bar").style.display=mode==="results"?"block":"none";
+  document.getElementById("resultsControls").style.display=mode==="results"?"block":"none";
   document.getElementById("shiftControls").style.display=mode==="shift"?"block":"none";
   document.getElementById("resultsLegend").style.display=mode==="results"?"flex":"none";
   document.getElementById("shiftLegend").style.display=mode==="shift"?"flex":"none";
@@ -1060,6 +1306,19 @@ function restoreFromUrlHash(){
   if(!window.location.hash||window.location.hash.length<2) return false;
   const params=new URLSearchParams(window.location.hash.slice(1));
   isRestoringHash=true;
+
+  const c1=params.get("c1"),c2=params.get("c2"),c3=params.get("c3");
+  if(c1) document.getElementById("cutoff1").value=c1;
+  if(c2) document.getElementById("cutoff2").value=c2;
+  if(c3) document.getElementById("cutoff3").value=c3;
+  updateResultsLegend();
+
+  const npv=params.get("npv");
+  if(npv!==null){
+    npvShift=Number(npv)||0;
+    npvSlider.value=Math.max(-15,Math.min(15,npvShift));
+    npvInput.value=npvShift;
+  }
 
   const mode=params.get("mode");
   const yr=Number(params.get("year"));
@@ -1095,6 +1354,7 @@ function restoreFromUrlHash(){
 
 map.on("load",async()=>{
   try{
+    updateResultsLegend();
     statusBox.textContent="Loading county boundaries...";
     const boundaryResponse=await fetch("https://cdn.jsdelivr.net/npm/us-atlas@3/counties-10m.json");
     if(!boundaryResponse.ok) throw new Error("Could not load county boundaries.");
@@ -1111,12 +1371,22 @@ map.on("load",async()=>{
     if(!dataResponse.ok) throw new Error("Could not load historical JSON. Check that the file is uploaded.");
     const electionData=await dataResponse.json();
 
+    const yearTotals={};
     electionData.forEach(result=>{
       const year=Number(result.year);
       const fips=String(result.fips).padStart(5,"0");
       if(!resultsByYear[year]) resultsByYear[year]={};
       resultsByYear[year][fips]=result;
       if(result.state) stateAbbrByFips[fips.slice(0,2)]=result.state;
+
+      if(!yearTotals[year]) yearTotals[year]={dem:0,rep:0};
+      yearTotals[year].dem+=(Number(result.dem)||0);
+      yearTotals[year].rep+=(Number(result.rep)||0);
+    });
+
+    Object.entries(yearTotals).forEach(([yr,totals])=>{
+      const twoParty=totals.dem+totals.rep;
+      actualNpvByYear[Number(yr)]=twoParty>0?100*(totals.dem-totals.rep)/twoParty:0;
     });
 
     // Populate State Filter Dropdown
@@ -1138,7 +1408,7 @@ map.on("load",async()=>{
     });
     map.addLayer({
       id:"county-outline",type:"line",source:"counties",
-      paint:{"line-color":"#ffffff","line-width":0.35}
+      paint:{"line-color":"#ffffff","line-width":0.3}
     });
     map.addLayer({
       id:"hover-outline",type:"line",source:"counties",
@@ -1157,8 +1427,8 @@ map.on("load",async()=>{
     map.addLayer({
       id:"state-outline",type:"line",source:"state-borders",
       paint:{
-        "line-color":"#263449",
-        "line-width":["interpolate",["linear"],["zoom"],2,0.8,5,1.5,8,2]
+        "line-color":"#101827",
+        "line-width":["interpolate",["linear"],["zoom"],2,1.6,5,2.8,8,4.0]
       }
     });
 
@@ -1185,8 +1455,8 @@ map.on("load",async()=>{
       }else if(mapMode==="results"&&p.margin!==null&&p.margin!==undefined){
         const m=Number(p.margin);
         const cls=m>0?"tt-dem":m<0?"tt-rep":"tt-neutral";
-        const txt=m>0?`D+${m.toFixed(2)}`:m<0?`R+${Math.abs(m).toFixed(2)}`:"Tied";
-        statHtml=`<div class="tt-stat ${cls}">${currentYear}: ${txt}</div>`;
+        const adjLabel=npvShift!==0?" (adj.)":"";
+        statHtml=`<div class="tt-stat ${cls}">${currentYear}: ${fmtMarginStr(m)}${adjLabel}</div>`;
       }
 
       const hint=map.getZoom()<STATE_ZOOM_THRESHOLD&&!selectedStateFips
@@ -1203,7 +1473,7 @@ map.on("load",async()=>{
       const mapRect=map.getContainer().getBoundingClientRect();
       let left=event.point.x+14;
       let top=event.point.y+14;
-      if(left+225>mapRect.width) left=event.point.x-225;
+      if(left+235>mapRect.width) left=event.point.x-235;
       if(top+85>mapRect.height) top=event.point.y-85;
       hoverTooltip.style.left=Math.max(8,left)+"px";
       hoverTooltip.style.top=Math.max(8,top)+"px";
@@ -1215,11 +1485,10 @@ map.on("load",async()=>{
       map.setFilter("hover-outline",["==","mapFips",""]);
     });
 
-    // Click handler: click state to zoom, click county when zoomed in, or click outside to return to big map
+    // Click handler
     map.on("click",event=>{
       const features=map.queryRenderedFeatures(event.point,{layers:["county-fill"]});
 
-      // Clicked outside any county/state -> return to the big US map
       if(!features.length){
         if(map.getZoom()>DEFAULT_ZOOM+0.35||selectedStateFips||activePopup){
           resetToBigMap();
@@ -1229,7 +1498,6 @@ map.on("load",async()=>{
 
       const p=features[0].properties;
 
-      // At national view, clicking a state zooms into that state
       if(map.getZoom()<STATE_ZOOM_THRESHOLD&&!selectedStateFips){
         const stateFeature=statesByFips[p.stateFips];
         if(stateFeature){
@@ -1238,7 +1506,6 @@ map.on("load",async()=>{
         }
       }
 
-      // When zoomed into a state/region, clicking a county opens its full details + 2000-2024 history chart
       setSelectedCountyHighlight(p.mapFips||"");
       openCountyDetailsPopup(p,event.lngLat);
     });
