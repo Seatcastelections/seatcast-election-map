@@ -19,7 +19,49 @@ h1 { margin:0 0 7px; font-size:25px; }
 .mode-button { padding:11px 18px; border:1px solid #cbd5e1; border-radius:7px; background:white; cursor:pointer; font-weight:bold; font-size:14px; }
 .mode-button:hover { background:#e8f1fc; }
 .mode-button.active { background:#172b4d; color:white; border-color:#172b4d; }
-#map { width:100%; height:650px; background:#e8edf3; border-radius:10px; overflow:hidden; }
+
+.map-wrapper { position:relative; width:100%; border-radius:10px; overflow:hidden; }
+#map { width:100%; height:650px; background:#e8edf3; }
+
+#resetMapButton {
+  display:none;
+  position:absolute;
+  top:12px;
+  left:12px;
+  z-index:5;
+  padding:9px 14px;
+  border:1px solid #cbd5e1;
+  border-radius:7px;
+  background:white;
+  color:#172b4d;
+  font-weight:700;
+  font-size:13px;
+  cursor:pointer;
+  box-shadow:0 2px 8px rgba(0,0,0,0.15);
+}
+#resetMapButton:hover { background:#e8f1fc; }
+
+#hoverTooltip {
+  display:none;
+  position:absolute;
+  z-index:6;
+  pointer-events:none;
+  background:rgba(16, 24, 39, 0.94);
+  color:white;
+  padding:8px 11px;
+  border-radius:7px;
+  font-size:13px;
+  line-height:1.4;
+  box-shadow:0 4px 12px rgba(0,0,0,0.2);
+  max-width:240px;
+}
+#hoverTooltip .tt-title { font-weight:700; font-size:13.5px; }
+#hoverTooltip .tt-stat { margin-top:2px; font-weight:700; }
+#hoverTooltip .tt-dem { color:#7cc0ff; }
+#hoverTooltip .tt-rep { color:#ff8a8a; }
+#hoverTooltip .tt-neutral { color:#d1d5db; }
+#hoverTooltip .tt-hint { color:#94a3b8; font-size:11px; margin-top:3px; }
+
 .year-bar,.shift-controls { background:white; border:1px solid #dce2ea; border-radius:10px; padding:16px; margin-top:14px; box-shadow:0 2px 8px rgba(0,0,0,.05); }
 .year-heading { display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:12px; }
 .year-heading strong { font-size:17px; }
@@ -90,7 +132,11 @@ footer { padding:20px; background:#101827; color:#aab4c5; text-align:center; fon
   <button id="shiftMode" class="mode-button">County Shift</button>
 </div>
 
-<div id="map"></div>
+<div class="map-wrapper">
+  <button id="resetMapButton" type="button">← Back to US Map</button>
+  <div id="hoverTooltip"></div>
+  <div id="map"></div>
+</div>
 
 <div class="year-bar">
   <div class="year-heading">
@@ -172,7 +218,7 @@ footer { padding:20px; background:#101827; color:#aab4c5; text-align:center; fon
     </div>
     <button id="countySearchButton">Find county</button>
   </div>
-  <div id="searchMessage">Search for a county or select a row in the rankings to zoom to it.</div>
+  <div id="searchMessage">Click a state on the map to zoom in, search for a county, or select a row in the rankings.</div>
   <div class="ranking-heading">
     <h2 id="rankingTitle">County rankings — 2024</h2>
     <span id="rankingCount"></span>
@@ -194,8 +240,14 @@ footer { padding:20px; background:#101827; color:#aab4c5; text-align:center; fon
 
 <script>
 const years=[2000,2004,2008,2012,2016,2020,2024];
+const DEFAULT_CENTER=[-96,38];
+const DEFAULT_ZOOM=3.3;
+const STATE_ZOOM_THRESHOLD=4.5;
+
 const errorBox=document.getElementById("errorBox");
 const statusBox=document.getElementById("status");
+const hoverTooltip=document.getElementById("hoverTooltip");
+const resetMapButton=document.getElementById("resetMapButton");
 
 function showError(message){
   errorBox.style.display="block";
@@ -211,14 +263,15 @@ const map=new maplibregl.Map({
     sources:{},
     layers:[{id:"background",type:"background",paint:{"background-color":"#e8edf3"}}]
   },
-  center:[-96,38],
-  zoom:3.3,
+  center:DEFAULT_CENTER,
+  zoom:DEFAULT_ZOOM,
   minZoom:2,
   maxZoom:12
 });
 map.addControl(new maplibregl.NavigationControl(),"top-right");
 
 let counties=null;
+let statesByFips={};
 let resultsByYear={};
 let currentYear=2024;
 let mapMode="results";
@@ -227,7 +280,44 @@ let activePopup=null;
 function showCountyPopup(lngLat,html){
   if(activePopup) activePopup.remove();
   activePopup=new maplibregl.Popup().setLngLat(lngLat).setHTML(html).addTo(map);
+  activePopup.on("close",()=>{
+    if(map.getLayer("selected-outline")){
+      map.setFilter("selected-outline",["==","mapFips",""]);
+    }
+  });
 }
+
+function setSelectedCountyHighlight(fips){
+  if(map.getLayer("selected-outline")){
+    map.setFilter("selected-outline",["==","mapFips",fips||""]);
+  }
+}
+
+function updateResetButtonVisibility(){
+  resetMapButton.style.display=map.getZoom()>DEFAULT_ZOOM+0.35?"block":"none";
+}
+map.on("zoomend",updateResetButtonVisibility);
+
+function resetToBigMap(){
+  if(activePopup){
+    activePopup.remove();
+    activePopup=null;
+  }
+  setSelectedCountyHighlight("");
+  hoverTooltip.style.display="none";
+  map.flyTo({
+    center:DEFAULT_CENTER,
+    zoom:DEFAULT_ZOOM,
+    duration:850
+  });
+  document.getElementById("searchMessage").textContent="Showing full US map. Click any state to zoom in.";
+}
+resetMapButton.addEventListener("click",resetToBigMap);
+document.addEventListener("keydown",e=>{
+  if(e.key==="Escape"&&map.getZoom()>DEFAULT_ZOOM+0.35){
+    resetToBigMap();
+  }
+});
 
 function getCountyFips(feature){
   return String(feature.id).padStart(5,"0");
@@ -250,6 +340,8 @@ function updateMapForYear(year){
 
   counties.features.forEach(feature=>{
     const fips=getCountyFips(feature);
+    const stateFips=fips.slice(0,2);
+    const stateFeature=statesByFips[stateFips];
     const result=electionResults[getElectionFips(fips)];
     const p=feature.properties;
     p.winner=result?result.winner:"NA";
@@ -261,8 +353,10 @@ function updateMapForYear(year){
     p.repPct=result?result.repPct:null;
     p.margin=result&&(Number(result.dem)+Number(result.rep))>0
       ?100*(Number(result.dem)-Number(result.rep))/(Number(result.dem)+Number(result.rep)):null;
-    p.countyName=result?result.county:"";
+    p.countyName=result?result.county:(feature.properties.name||"County "+fips);
     p.state=result?result.state:"";
+    p.stateFullName=stateFeature&&stateFeature.properties?stateFeature.properties.name:"";
+    p.stateFips=stateFips;
     p.electionYear=currentYear;
     p.mapFips=fips;
     p.shiftAvailable=false;
@@ -284,6 +378,8 @@ function updateMapForShift(){
 
   counties.features.forEach(feature=>{
     const fips=getCountyFips(feature);
+    const stateFips=fips.slice(0,2);
+    const stateFeature=statesByFips[stateFips];
     const dataFips=getElectionFips(fips);
     const oldResult=oldResults[dataFips];
     const newResult=newResults[dataFips];
@@ -292,6 +388,9 @@ function updateMapForShift(){
     p.toYear=toYear;
     p.shift=null;
     p.shiftAvailable=false;
+    p.stateFips=stateFips;
+    p.stateFullName=stateFeature&&stateFeature.properties?stateFeature.properties.name:"";
+    p.mapFips=fips;
 
     if(!oldResult||!newResult){
       p.fillColor="#d1d5db";
@@ -319,7 +418,6 @@ function updateMapForShift(){
     p.countyName=newResult.county;
     p.state=newResult.state;
     p.margin=newMargin;
-    p.mapFips=fips;
 
     if(Math.abs(shift)<1) p.fillColor="#d1d5db";
     else if(shift>=1&&shift<3) p.fillColor="#b3d4f0";
@@ -340,25 +438,94 @@ function esc(value){
 }
 function countyLabel(feature){
   const p=feature.properties||{};
-  return (p.countyName||"Unknown County")+", "+(p.state||"");
+  const statePart=p.state||p.stateFullName||"";
+  return (p.countyName||"Unknown County")+(statePart?", "+statePart:"");
 }
-function countyBounds(feature){
+function featureBounds(feature){
   const bounds=new maplibregl.LngLatBounds();
+  const isAlaska=String(feature.id).padStart(2,"0").startsWith("02");
   function walk(coords){
     if(!Array.isArray(coords)) return;
-    if(typeof coords[0]==="number"&&typeof coords[1]==="number") bounds.extend(coords);
-    else coords.forEach(walk);
+    if(typeof coords[0]==="number"&&typeof coords[1]==="number"){
+      const lng=isAlaska&&coords[0]>0?coords[0]-360:coords[0];
+      bounds.extend([lng,coords[1]]);
+    }else{
+      coords.forEach(walk);
+    }
   }
   if(feature.geometry) walk(feature.geometry.coordinates);
   return bounds;
 }
+function zoomToState(stateFeature){
+  if(!stateFeature) return;
+  const bounds=featureBounds(stateFeature);
+  if(!bounds.isEmpty()){
+    if(activePopup){
+      activePopup.remove();
+      activePopup=null;
+    }
+    setSelectedCountyHighlight("");
+    map.fitBounds(bounds,{padding:45,maxZoom:8.5,duration:850});
+    const stateName=stateFeature.properties?.name||"state";
+    document.getElementById("searchMessage").textContent=
+      "Zoomed into "+stateName+". Click any county for details, or click outside the map to return to the full US view.";
+  }
+}
 function zoomToCounty(feature){
-  const bounds=countyBounds(feature);
+  const bounds=featureBounds(feature);
   if(!bounds.isEmpty()){
     map.fitBounds(bounds,{padding:80,maxZoom:8,duration:900});
   }
+  setSelectedCountyHighlight(feature.properties?.mapFips||"");
   document.getElementById("map").scrollIntoView({behavior:"smooth",block:"center"});
-  document.getElementById("searchMessage").textContent="Showing "+countyLabel(feature)+".";
+  document.getElementById("searchMessage").textContent=
+    "Showing "+countyLabel(feature)+". Click outside the map to return to the full US view.";
+}
+
+function openCountyDetailsPopup(p,lngLat){
+  if(mapMode==="shift"){
+    if(!p.shiftAvailable){
+      showCountyPopup(
+        lngLat,
+        `<strong>No matching historical data found.</strong><br><br>Map FIPS: ${p.mapFips}<br>Comparison: ${p.fromYear} to ${p.toYear}`
+      );
+      return;
+    }
+    const direction=p.shift>0?"toward Democrats":p.shift<0?"toward Republicans":"No change";
+    const startingMargin=p.margin-p.shift;
+    const startingText=startingMargin>0?"D+":startingMargin<0?"R+":"Tied";
+    const endingText=p.margin>0?"D+":p.margin<0?"R+":"Tied";
+    const html=`<div style="font-family:Arial;min-width:220px">
+      <strong style="font-size:16px">${esc(p.countyName)}, ${esc(p.state||p.stateFullName)}</strong>
+      <div style="color:#667085;margin:5px 0 10px">${p.fromYear} to ${p.toYear}</div>
+      <div>Shift: <strong>${Math.abs(p.shift).toFixed(2)} points</strong></div>
+      <div>${direction}</div><hr>
+      <div>Starting margin: ${startingText} ${Math.abs(startingMargin).toFixed(2)}</div>
+      <div>Ending margin: ${endingText} ${Math.abs(p.margin).toFixed(2)}</div>
+    </div>`;
+    showCountyPopup(lngLat,html);
+    return;
+  }
+
+  if(p.dem===null||p.rep===null){
+    showCountyPopup(
+      lngLat,
+      `<strong>No election data found for this county.</strong><br><br>Map FIPS: ${p.mapFips}<br>Election year: ${p.electionYear}`
+    );
+    return;
+  }
+
+  const margin=Number(p.margin);
+  const marginText=margin>0?"D+"+margin.toFixed(2):margin<0?"R+"+Math.abs(margin).toFixed(2):"Tied";
+  const html=`<div style="font-family:Arial;min-width:220px">
+    <strong style="font-size:16px">${esc(p.countyName||"County")}, ${esc(p.state||p.stateFullName)}</strong>
+    <div style="color:#667085;margin:5px 0 10px">${p.electionYear} Presidential Election</div>
+    <div style="color:#2166ac">Democratic: ${Number(p.dem).toLocaleString()} (${Number(p.demPct).toFixed(2)}%)</div>
+    <div style="color:#c62828">Republican: ${Number(p.rep).toLocaleString()} (${Number(p.repPct).toFixed(2)}%)</div>
+    <hr><div>Total votes: ${Number(p.total).toLocaleString()}</div>
+    <strong>Two-party margin: ${marginText}</strong>
+  </div>`;
+  showCountyPopup(lngLat,html);
 }
 
 function refreshCountyExplorer(){
@@ -434,13 +601,8 @@ function refreshCountyExplorer(){
   body.querySelectorAll("tr[data-index]").forEach(row=>row.addEventListener("click",()=>{
     const f=counties.features[Number(row.dataset.index)],p=f.properties;
     zoomToCounty(f);
-    const center=countyBounds(f).getCenter();
-    let detail;
-    if(mapMode==="shift")
-      detail=`${p.fromYear} to ${p.toYear}<br>Shift: ${p.shift>0?"D+":p.shift<0?"R+":" "}${Math.abs(Number(p.shift)).toFixed(2)} points`;
-    else
-      detail=`${currentYear} presidential election<br>Margin: ${p.margin>0?"D+":p.margin<0?"R+":" "}${Math.abs(Number(p.margin)).toFixed(2)}`;
-    showCountyPopup(center,`<strong>${esc(countyLabel(f))}</strong><br>${detail}`);
+    const center=featureBounds(f).getCenter();
+    openCountyDetailsPopup(p,center);
   }));
 }
 
@@ -454,11 +616,8 @@ function findCounty(){
     return;
   }
   zoomToCounty(f);
-  const p=f.properties,center=countyBounds(f).getCenter();
-  const detail=mapMode==="shift"
-    ?`${p.fromYear} to ${p.toYear}<br>Shift: ${Number(p.shift)>0?"D+":Number(p.shift)<0?"R+":" "}${Math.abs(Number(p.shift)).toFixed(2)} points`
-    :`${currentYear} presidential election<br>Margin: ${Number(p.margin)>0?"D+":Number(p.margin)<0?"R+":" "}${Math.abs(Number(p.margin)).toFixed(2)}`;
-  showCountyPopup(center,`<strong>${esc(countyLabel(f))}</strong><br>${detail}`);
+  const p=f.properties,center=featureBounds(f).getCenter();
+  openCountyDetailsPopup(p,center);
 }
 document.getElementById("countySearchButton").addEventListener("click",findCounty);
 document.getElementById("countySearch").addEventListener("keydown",e=>{if(e.key==="Enter")findCounty();});
@@ -505,6 +664,10 @@ map.on("load",async()=>{
     if(!boundaryResponse.ok) throw new Error("Could not load county boundaries.");
     const topology=await boundaryResponse.json();
     counties=topojson.feature(topology,topology.objects.counties);
+    const statesGeo=topojson.feature(topology,topology.objects.states);
+    statesGeo.features.forEach(s=>{
+      statesByFips[String(s.id).padStart(2,"0")]=s;
+    });
     const stateBorders=topojson.mesh(topology,topology.objects.states,(a,b)=>a!==b);
 
     statusBox.textContent="Loading historical election results...";
@@ -528,6 +691,16 @@ map.on("load",async()=>{
       id:"county-outline",type:"line",source:"counties",
       paint:{"line-color":"#ffffff","line-width":0.35}
     });
+    map.addLayer({
+      id:"hover-outline",type:"line",source:"counties",
+      filter:["==","mapFips",""],
+      paint:{"line-color":"#101827","line-width":1.8}
+    });
+    map.addLayer({
+      id:"selected-outline",type:"line",source:"counties",
+      filter:["==","mapFips",""],
+      paint:{"line-color":"#f59e0b","line-width":2.6}
+    });
     map.addSource("state-borders",{
       type:"geojson",
       data:{type:"Feature",geometry:stateBorders,properties:{}}
@@ -543,56 +716,81 @@ map.on("load",async()=>{
     updateMapForYear(2024);
     statusBox.textContent="Historical election map loaded successfully.";
 
-    map.on("click","county-fill",event=>{
+    // Hover over county to see what it is
+    map.on("mousemove","county-fill",event=>{
+      map.getCanvas().style.cursor="pointer";
       const p=event.features[0].properties;
+      map.setFilter("hover-outline",["==","mapFips",p.mapFips||""]);
 
-      if(mapMode==="shift"){
-        if(!p.shiftAvailable){
-          showCountyPopup(
-            event.lngLat,
-            `<strong>No matching historical data found.</strong><br><br>Map FIPS: ${p.mapFips}<br>Comparison: ${p.fromYear} to ${p.toYear}`
-          );
-          return;
-        }
-        const direction=p.shift>0?"toward Democrats":p.shift<0?"toward Republicans":"No change";
-        const startingMargin=p.margin-p.shift;
-        const startingText=startingMargin>0?"D+":startingMargin<0?"R+":"Tied";
-        const endingText=p.margin>0?"D+":p.margin<0?"R+":"Tied";
-        const html=`<div style="font-family:Arial;min-width:220px">
-          <strong style="font-size:16px">${esc(p.countyName)}, ${esc(p.state)}</strong>
-          <div style="color:#667085;margin:5px 0 10px">${p.fromYear} to ${p.toYear}</div>
-          <div>Shift: <strong>${Math.abs(p.shift).toFixed(2)} points</strong></div>
-          <div>${direction}</div><hr>
-          <div>Starting margin: ${startingText} ${Math.abs(startingMargin).toFixed(2)}</div>
-          <div>Ending margin: ${endingText} ${Math.abs(p.margin).toFixed(2)}</div>
-        </div>`;
-        showCountyPopup(event.lngLat,html);
-        return;
+      const stateDisplay=p.state||p.stateFullName||"";
+      const title=(p.countyName||"County")+(stateDisplay?", "+stateDisplay:"");
+      let statHtml=`<div class="tt-stat tt-neutral">No data</div>`;
+
+      if(mapMode==="shift"&&p.shiftAvailable){
+        const s=Number(p.shift);
+        const cls=s>0?"tt-dem":s<0?"tt-rep":"tt-neutral";
+        const txt=s>0?`D+${s.toFixed(2)} shift`:s<0?`R+${Math.abs(s).toFixed(2)} shift`:"No change";
+        statHtml=`<div class="tt-stat ${cls}">${p.fromYear}→${p.toYear}: ${txt}</div>`;
+      }else if(mapMode==="results"&&p.margin!==null&&p.margin!==undefined){
+        const m=Number(p.margin);
+        const cls=m>0?"tt-dem":m<0?"tt-rep":"tt-neutral";
+        const txt=m>0?`D+${m.toFixed(2)}`:m<0?`R+${Math.abs(m).toFixed(2)}`:"Tied";
+        statHtml=`<div class="tt-stat ${cls}">${currentYear}: ${txt}</div>`;
       }
 
-      if(p.dem===null||p.rep===null){
-        showCountyPopup(
-          event.lngLat,
-          `<strong>No election data found for this county.</strong><br><br>Map FIPS: ${p.mapFips}<br>Election year: ${p.electionYear}`
-        );
-        return;
-      }
+      const hint=map.getZoom()<STATE_ZOOM_THRESHOLD
+        ?`Click to zoom to ${esc(p.stateFullName||stateDisplay||"state")}`
+        :"Click for county details";
 
-      const margin=Number(p.margin);
-      const marginText=margin>0?"D+"+margin.toFixed(2):margin<0?"R+"+Math.abs(margin).toFixed(2):"Tied";
-      const html=`<div style="font-family:Arial;min-width:220px">
-        <strong style="font-size:16px">${esc(p.countyName||"County")}, ${esc(p.state||"")}</strong>
-        <div style="color:#667085;margin:5px 0 10px">${p.electionYear} Presidential Election</div>
-        <div style="color:#2166ac">Democratic: ${Number(p.dem).toLocaleString()} (${Number(p.demPct).toFixed(2)}%)</div>
-        <div style="color:#c62828">Republican: ${Number(p.rep).toLocaleString()} (${Number(p.repPct).toFixed(2)}%)</div>
-        <hr><div>Total votes: ${Number(p.total).toLocaleString()}</div>
-        <strong>Two-party margin: ${marginText}</strong>
-      </div>`;
-      showCountyPopup(event.lngLat,html);
+      hoverTooltip.innerHTML=`
+        <div class="tt-title">${esc(title)}</div>
+        ${statHtml}
+        <div class="tt-hint">${hint}</div>
+      `;
+      hoverTooltip.style.display="block";
+
+      const mapRect=map.getContainer().getBoundingClientRect();
+      let left=event.point.x+14;
+      let top=event.point.y+14;
+      if(left+220>mapRect.width) left=event.point.x-220;
+      if(top+85>mapRect.height) top=event.point.y-85;
+      hoverTooltip.style.left=Math.max(8,left)+"px";
+      hoverTooltip.style.top=Math.max(8,top)+"px";
     });
 
-    map.on("mouseenter","county-fill",()=>map.getCanvas().style.cursor="pointer");
-    map.on("mouseleave","county-fill",()=>map.getCanvas().style.cursor="");
+    map.on("mouseleave","county-fill",()=>{
+      map.getCanvas().style.cursor="";
+      hoverTooltip.style.display="none";
+      map.setFilter("hover-outline",["==","mapFips",""]);
+    });
+
+    // Click handler: click state to zoom, click county when zoomed in, or click outside to return to big map
+    map.on("click",event=>{
+      const features=map.queryRenderedFeatures(event.point,{layers:["county-fill"]});
+
+      // Clicked outside any county/state -> return to the big US map
+      if(!features.length){
+        if(map.getZoom()>DEFAULT_ZOOM+0.35||activePopup){
+          resetToBigMap();
+        }
+        return;
+      }
+
+      const p=features[0].properties;
+
+      // At national view, clicking a state zooms into that state
+      if(map.getZoom()<STATE_ZOOM_THRESHOLD){
+        const stateFeature=statesByFips[p.stateFips];
+        if(stateFeature){
+          zoomToState(stateFeature);
+          return;
+        }
+      }
+
+      // When zoomed into a state/region, clicking a county opens its full details
+      setSelectedCountyHighlight(p.mapFips||"");
+      openCountyDetailsPopup(p,event.lngLat);
+    });
   }catch(error){
     showError(error.message);
     statusBox.textContent="Map failed to load.";
