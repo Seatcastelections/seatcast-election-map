@@ -426,13 +426,15 @@ footer { padding:20px; background:#101827; color:#aab4c5; text-align:center; fon
 <!-- Interactive Map -->
 <div class="map-wrapper">
   <div class="map-topleft-controls">
+    <button id="stateViewButton" class="map-nav-btn active" type="button">State View</button>
+    <button id="fullViewButton" class="map-nav-btn" type="button">Full County View</button>
     <button id="resetMapButton" class="map-nav-btn" type="button">← Back to US Map</button>
     <button id="jumpLower48" class="map-nav-btn" type="button">Lower 48</button>
     <button id="jumpAlaska" class="map-nav-btn" type="button">Alaska</button>
     <button id="jumpHawaii" class="map-nav-btn" type="button">Hawaii</button>
     <select id="mapHighlightSelect" class="map-highlight-select" aria-label="Highlight county streaks">
       <option value="none">Outlines: Standard</option>
-      <option value="bellwether">Outline: 2000–2024 Bellwethers</option>
+      <option value="bellwether">Outline: Selected-Year Bellwethers</option>
       <option value="swing">Outline: Swing Counties (2+ Flips)</option>
       <option value="flip2024">Outline: Flipped in 2024</option>
     </select>
@@ -607,7 +609,7 @@ footer { padding:20px; background:#101827; color:#aab4c5; text-align:center; fon
       <label for="streakFilter">Filter by streak</label>
       <select id="streakFilter">
         <option value="all">All Counties</option>
-        <option value="bellwether">2000–2024 Bellwethers (7/7)</option>
+        <option value="bellwether">Selected-Year Bellwethers</option>
         <option value="swing">Swing Counties (2+ Flips)</option>
         <option value="flip2024">Flipped in 2024</option>
       </select>
@@ -629,9 +631,11 @@ footer { padding:20px; background:#101827; color:#aab4c5; text-align:center; fon
     <button id="countySearchButton" type="button">Find county</button>
   </div>
   <div id="searchMessage">Click a state on the map to zoom in, search for a county, or select a row in the rankings.</div>
-  <div class="ranking-heading">
+  <div class="explorer-field" style="max-width:520px;margin-top:14px"><label for="bellwetherYears">Bellwether years (select multiple)</label><select id="bellwetherYears" multiple size="3" style="width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:6px"><option value="2000" selected>2000</option><option value="2004" selected>2004</option><option value="2008" selected>2008</option><option value="2012" selected>2012</option><option value="2016" selected>2016</option><option value="2020" selected>2020</option><option value="2024" selected>2024</option></select><div class="table-note">Hold Ctrl (Windows) or Command (Mac) to select or deselect years. A bellwether county matches the national winner in every selected year.</div></div>
+<div class="ranking-heading">
     <h2 id="rankingTitle">County rankings — 2024</h2>
     <div class="ranking-actions">
+      <label style="font-size:12px;font-weight:700;color:#667085">Show <select id="rankingLimit" class="mini-btn" aria-label="Number of ranked counties"><option value="10" selected>10</option><option value="25">25</option><option value="50">50</option></select></label>
       <span id="rankingCount"></span>
       <button id="exportCsvButton" class="mini-btn" type="button">Download CSV</button>
     </div>
@@ -670,8 +674,9 @@ function getEvTableForYear(yr){
   return EV_BY_CYCLE["2024"];
 }
 
-const DEFAULT_CENTER=[-96,38];
-const DEFAULT_ZOOM=3.3;
+const DEFAULT_CENTER=[-112,43];
+const DEFAULT_ZOOM=2.25;
+let mapView="state";
 const STATE_ZOOM_THRESHOLD=4.5;
 
 const errorBox=document.getElementById("errorBox");
@@ -702,7 +707,7 @@ const map=new maplibregl.Map({
   },
   center:DEFAULT_CENTER,
   zoom:DEFAULT_ZOOM,
-  minZoom:2,
+  minZoom:DEFAULT_ZOOM,
   maxZoom:12
 });
 map.addControl(new maplibregl.NavigationControl(),"top-right");
@@ -871,6 +876,29 @@ function setSelectedCountyHighlight(fips){
   }
 }
 
+function selectedBellwetherYears(){
+  const chosen=[...document.getElementById("bellwetherYears").selectedOptions].map(o=>Number(o.value));
+  return chosen.length?chosen:years.slice();
+}
+function recalculateBellwethers(){
+  const chosen=selectedBellwetherYears();
+  Object.keys(countyHistoryMeta).forEach(fips=>{
+    const matches=chosen.every(yr=>{
+      const rec=(resultsByYear[yr]||{})[fips];
+      if(!rec) return false;
+      const d=Number(rec.dem)||0,r=Number(rec.rep)||0;
+      return d+r>0&&(d>r?"D":"R")===NATIONAL_WINNER[yr];
+    });
+    countyHistoryMeta[fips].isBellwether=matches;
+  });
+  if(counties){
+    counties.features.forEach(f=>{const meta=countyHistoryMeta[getElectionFips(getCountyFips(f))]||{};f.properties.isBellwether=Boolean(meta.isBellwether);});
+    if(map.getSource("counties")) map.getSource("counties").setData(counties);
+    applyStreakMapHighlight(); refreshCountyExplorer();
+  }
+}
+document.getElementById("bellwetherYears").addEventListener("change",recalculateBellwethers);
+
 // --- Bellwether & Streak Highlight Layer ---
 function applyStreakMapHighlight(){
   const mode=mapHighlightSelect.value;
@@ -895,6 +923,28 @@ streakFilter.addEventListener("change",()=>{
   applyStreakMapHighlight();
   refreshCountyExplorer();
 });
+
+function applyMapView(){
+  const stateOverview=mapView==="state"&&!selectedStateFips;
+  ["county-fill","county-outline","streak-outline","hover-outline","selected-outline"].forEach(id=>{
+    if(map.getLayer(id)) map.setLayoutProperty(id,"visibility",stateOverview?"none":"visible");
+  });
+  if(map.getLayer("state-fill")) map.setLayoutProperty(map.getLayer("state-fill")?"state-fill":"state-fill","visibility",stateOverview?"visible":"none");
+  document.getElementById("stateViewButton").classList.toggle("active",mapView==="state");
+  document.getElementById("fullViewButton").classList.toggle("active",mapView==="full");
+}
+function setMapView(view){
+  mapView=view;
+  selectedStateFips="";
+  selectedCountyFips="";
+  stateFilter.value="";
+  if(activePopup){activePopup.remove();activePopup=null;}
+  applyMapView();
+  map.flyTo({center:DEFAULT_CENTER,zoom:DEFAULT_ZOOM,duration:700});
+  updateResetButtonVisibility(); updateSummaryBar(); refreshCountyExplorer(); syncUrlHash();
+}
+document.getElementById("stateViewButton").addEventListener("click",()=>setMapView("state"));
+document.getElementById("fullViewButton").addEventListener("click",()=>setMapView("full"));
 
 function updateResetButtonVisibility(){
   const zoomedIn=map.getZoom()>DEFAULT_ZOOM+0.35||Boolean(selectedStateFips);
@@ -942,6 +992,7 @@ function resetToBigMap(){
   selectedStateFips="";
   selectedCountyFips="";
   stateFilter.value="";
+  applyMapView();
   setSelectedCountyHighlight("");
   hoverTooltip.style.display="none";
   map.flyTo({
@@ -1051,6 +1102,11 @@ function updateElectoralCollege(){
 
   let demEv=0,repEv=0;
   const stateMargins=[];
+  // County-level files may omit DC because it has no counties in the source. DC voted Democratic in every cycle shown; preserve its 3 EVs.
+  if(!stateTotals["11"] || (stateTotals["11"].dem+stateTotals["11"].rep)===0){
+    demEv+=3;
+    stateMargins.push({stFips:"11",name:"District of Columbia",evs:3,margin:100});
+  }
 
   Object.entries(evTable).forEach(([stFips,evs])=>{
     const tot=stateTotals[stFips];
@@ -1226,6 +1282,23 @@ function attachHistoryProps(p,dataFips){
   p.flipped2024=meta.flipped2024;
 }
 
+function updateStateViewColors(){
+  const src=map.getSource("states-fill");
+  if(!src) return;
+  const yearData=resultsByYear[currentYear]||{};
+  const totals={};
+  Object.entries(yearData).forEach(([fips,r])=>{
+    const st=fips.slice(0,2); if(!totals[st]) totals[st]={d:0,r:0};
+    totals[st].d+=Number(r.dem)||0; totals[st].r+=Number(r.rep)||0;
+  });
+  const features=Object.values(statesByFips).map(sf=>{
+    const st=String(sf.id).padStart(2,"0"),t=totals[st];
+    const m=t&&t.d+t.r>0?100*(t.d-t.r)/(t.d+t.r):null;
+    return {type:"Feature",id:sf.id,geometry:sf.geometry,properties:{...sf.properties,stateFips:st,fillColor:m===null?"#d1d5db":getResultsColor(m,m>0?"D":m<0?"R":"T"),margin:m}};
+  });
+  src.setData({type:"FeatureCollection",features});
+}
+
 function updateMapForYear(year){
   currentYear=Number(year);
   const electionResults=resultsByYear[currentYear]||{};
@@ -1280,6 +1353,7 @@ function updateMapForYear(year){
   });
 
   map.getSource("counties").setData(counties);
+  updateStateViewColors();
   updateElectoralCollege();
   updateSummaryBar();
   refreshCountyExplorer();
@@ -1412,6 +1486,7 @@ function zoomToState(stateFeature){
   selectedStateFips=stateFips;
   selectedCountyFips="";
   stateFilter.value=stateFips;
+  applyMapView();
 
   const bounds=featureBounds(stateFeature);
   if(!bounds.isEmpty()){
@@ -1742,7 +1817,8 @@ function refreshCountyExplorer(){
     mapMode==="results"
       ?`County rankings — ${scopePrefix}${currentYear}${shiftSuffix}`
       :`County rankings — ${scopePrefix}${from} to ${to}`;
-  document.getElementById("rankingCount").textContent=rows.length.toLocaleString()+" counties";
+  const showLimit=Number(document.getElementById("rankingLimit").value)||10;
+  document.getElementById("rankingCount").textContent=`Showing ${Math.min(showLimit,rows.length)} of ${rows.length.toLocaleString()} counties`;
   document.getElementById("rankingNote").textContent=
     mapMode==="results"
       ?(rows.length?"Margins reflect Democratic vs. Republican votes (including any active NPV shift). Select a row to zoom to that county.":"Switch to County Shift or Turnout Change mode for this ranking.")
@@ -1754,7 +1830,7 @@ function refreshCountyExplorer(){
     return;
   }
 
-  const limit=selectedStateFips?rows.length:100;
+  const limit=Number(document.getElementById("rankingLimit").value)||10;
   body.innerHTML=rows.slice(0,limit).map((f,i)=>{
     const p=f.properties,m=Number(p.margin),s=Number(p.shift),tPct=Number(p.turnoutPct);
     let value=fmtMarginStr(m);
@@ -1843,6 +1919,7 @@ function findCounty(){
 document.getElementById("countySearchButton").addEventListener("click",findCounty);
 document.getElementById("countySearch").addEventListener("keydown",e=>{if(e.key==="Enter")findCounty();});
 document.getElementById("rankingSort").addEventListener("change",refreshCountyExplorer);
+document.getElementById("rankingLimit").addEventListener("change",refreshCountyExplorer);
 
 stateFilter.addEventListener("change",()=>{
   const val=stateFilter.value;
@@ -2023,6 +2100,8 @@ map.on("load",async()=>{
       };
     });
 
+    recalculateBellwethers();
+
     // Populate State Filter Dropdown
     Object.entries(statesByFips)
       .filter(([fips])=>Number(fips)<=56)
@@ -2035,6 +2114,9 @@ map.on("load",async()=>{
         stateFilter.appendChild(opt);
       });
 
+    statesGeo.features.forEach(sf=>{sf.properties=sf.properties||{};sf.properties.stateFips=String(sf.id).padStart(2,"0");sf.properties.fillColor="#d1d5db";});
+    map.addSource("states-fill",{type:"geojson",data:statesGeo});
+    map.addLayer({id:"state-fill",type:"fill",source:"states-fill",paint:{"fill-color":["get","fillColor"],"fill-opacity":0.92}});
     map.addSource("counties",{type:"geojson",data:counties});
     map.addLayer({
       id:"county-fill",type:"fill",source:"counties",
@@ -2074,7 +2156,23 @@ map.on("load",async()=>{
     if(!restoreFromUrlHash()){
       updateMapForYear(2024);
     }
+    applyMapView();
     statusBox.textContent="Historical election map loaded successfully.";
+
+    applyMapView();
+    map.on("mousemove","state-fill",event=>{
+      map.getCanvas().style.cursor="pointer";
+      const p=event.features[0].properties;
+      hoverTooltip.innerHTML=`<div class="tt-title">${esc(p.name||"State")}</div><div class="tt-stat">${p.margin===null||p.margin===undefined?"No data":fmtMarginStr(Number(p.margin))} — ${currentYear}</div><div class="tt-hint">Click to explore counties</div>`;
+      hoverTooltip.style.display="block";
+      hoverTooltip.style.left=Math.min(event.point.x+14,map.getContainer().clientWidth-220)+"px";
+      hoverTooltip.style.top=Math.min(event.point.y+14,map.getContainer().clientHeight-70)+"px";
+    });
+    map.on("mouseleave","state-fill",()=>{map.getCanvas().style.cursor="";hoverTooltip.style.display="none";});
+    map.on("click","state-fill",event=>{
+      const sf=statesByFips[String(event.features[0].properties.stateFips).padStart(2,"0")];
+      if(sf) zoomToState(sf);
+    });
 
     // Hover over county
     map.on("mousemove","county-fill",event=>{
@@ -2135,6 +2233,7 @@ map.on("load",async()=>{
 
     // Click handler
     map.on("click",event=>{
+      if(mapView==="state"&&(!selectedStateFips||map.getZoom()<STATE_ZOOM_THRESHOLD)) return;
       const features=map.queryRenderedFeatures(event.point,{layers:["county-fill"]});
 
       if(!features.length){
