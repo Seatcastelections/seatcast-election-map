@@ -499,21 +499,22 @@ function applyStreakMapHighlight(){
 
   if(!map.getLayer("streak-outline")) return;
 
+  // Keep outline categories limited to the currently displayed region.
+  const regionFilter=map.getLayer("county-fill")?map.getFilter("county-fill"):null;
+  const withRegion=categoryFilter=>regionFilter?["all",regionFilter,categoryFilter]:categoryFilter;
+
   if(mode==="none"){
-    map.setFilter("streak-outline",["==","mapFips",""]);
+    map.setFilter("streak-outline",regionFilter||["==","mapFips",""]);
     map.setLayoutProperty("streak-outline","visibility","none");
   }else if(mode==="bellwether"){
     map.setLayoutProperty("streak-outline","visibility","visible");
-
-    map.setFilter("streak-outline",["==",["get","isBellwether"],true]);
-
+    map.setFilter("streak-outline",withRegion(["==",["get","isBellwether"],true]));
   }else if(mode==="swing"){
     map.setLayoutProperty("streak-outline","visibility","visible");
-    map.setFilter("streak-outline",[">=",["get","flipCount"],2]);
+    map.setFilter("streak-outline",withRegion([">=",["get","flipCount"],2]));
   }else if(mode==="flip2024"){
     map.setLayoutProperty("streak-outline","visibility","visible");
-    map.setFilter("streak-outline",["==",["get","flipped2024"],true]);
-
+    map.setFilter("streak-outline",withRegion(["==",["get","flipped2024"],true]));
   }
 
 }
@@ -558,6 +559,7 @@ function setMapRegion(region){
   const filter=["in",["get","stateFips"],["literal",allowed]];
 
   ["state-fill","county-fill","county-outline","streak-outline","hover-outline","selected-outline"].forEach(id=>{if(map.getLayer(id)) map.setFilter(id,filter);});
+  applyStreakMapHighlight();
 
   if(region==="lower48") map.fitBounds(LOWER48_BOUNDS,{padding:35,duration:700});
 
@@ -718,6 +720,7 @@ function resetToBigMap(){
   const lowerFilter=["in",["get","stateFips"],["literal",["01","04","05","06","08","09","10","11","12","13","16","17","18","19","20","21","22","23","24","25","26","27","28","29","30","31","32","33","34","35","36","37","38","39","40","41","42","44","45","46","47","48","49","50","51","53","54","55","56"]]];
 
   ["state-fill","county-fill","county-outline","streak-outline","hover-outline","selected-outline"].forEach(id=>{if(map.getLayer(id))map.setFilter(id,lowerFilter);});
+  applyStreakMapHighlight();
 
   map.fitBounds(LOWER48_BOUNDS,{padding:35,duration:850});
 
@@ -1766,6 +1769,9 @@ function zoomToCounty(feature){
     selectedStateFips=p.stateFips;
 
     stateFilter.value=p.stateFips;
+
+    // In State View, reveal county layers when a ranked county is selected.
+    applyMapView();
 
   }
 
@@ -3026,7 +3032,7 @@ map.on("load",async()=>{
 
       id:"county-outline",type:"line",source:"counties",
 
-      paint:{"line-color":"#64748b","line-width":["interpolate",["linear"],["zoom"],3,0.18,6,0.45,9,0.7],"line-opacity":0.42}
+      paint:{"line-color":"#111827","line-width":["interpolate",["linear"],["zoom"],3,0.35,6,0.75,9,1.15],"line-opacity":0.88}
 
     });
 
@@ -3108,7 +3114,13 @@ map.on("load",async()=>{
 
       const p=event.features[0].properties;
 
-      hoverTooltip.innerHTML=`<div class="tt-title">${esc(p.name||"State")}</div><div class="tt-stat">${p.margin===null||p.margin===undefined?"No data":fmtMarginStr(Number(p.margin))} — ${currentYear}</div><div class="tt-hint">Click to explore counties</div>`;
+      const stateValue=p.margin===null||p.margin===undefined?"No data":
+        mapMode==="turnout"
+          ?`Turnout change: ${Number(p.margin)>=0?"+":""}${Number(p.margin).toFixed(2)}% (${document.getElementById("fromYear").value}→${document.getElementById("toYear").value})`
+          :mapMode==="shift"
+            ?`Margin shift: ${fmtMarginStr(Number(p.margin))}`
+            :`${fmtMarginStr(Number(p.margin))} — ${currentYear}`;
+      hoverTooltip.innerHTML=`<div class="tt-title">${esc(p.name||"State")}</div><div class="tt-stat">${stateValue}</div><div class="tt-hint">Click to explore counties</div>`;
 
       hoverTooltip.style.display="block";
 
@@ -3138,13 +3150,24 @@ map.on("load",async()=>{
 
       const p=event.features[0].properties;
 
+      const stateDisplay=p.stateFullName||p.state||"";
+
+      if(selectedStateFips&&p.stateFips!==selectedStateFips){
+        map.setFilter("hover-outline",["==","mapFips",""]);
+        hoverTooltip.innerHTML=`<div class="tt-title">${esc(stateDisplay||"Another state")}</div><div class="tt-hint">Click to zoom into ${esc(stateDisplay||"this state")}</div>`;
+        hoverTooltip.style.display="block";
+        const mapRect=map.getContainer().getBoundingClientRect();
+        let left=event.point.x+14,top=event.point.y+14;
+        if(left+245>mapRect.width) left=event.point.x-245;
+        if(top+95>mapRect.height) top=event.point.y-95;
+        hoverTooltip.style.left=Math.max(8,left)+"px";
+        hoverTooltip.style.top=Math.max(8,top)+"px";
+        return;
+      }
+
       map.setFilter("hover-outline",["==","mapFips",p.mapFips||""]);
 
-
-
-      const stateDisplay=p.state||p.stateFullName||"";
-
-      const title=(p.countyName||"County")+(stateDisplay?", "+stateDisplay:"");
+      const title=(p.countyName||"County")+(stateDisplay?", "+(p.state||stateDisplay):"");
 
       let statHtml=`<div class="tt-stat tt-neutral">No data</div>`;
 
@@ -3270,7 +3293,11 @@ map.on("load",async()=>{
 
       const p=features[0].properties;
 
-
+      if(selectedStateFips&&p.stateFips!==selectedStateFips){
+        const otherState=statesByFips[p.stateFips];
+        if(otherState) zoomToState(otherState);
+        return;
+      }
 
       if(map.getZoom()<STATE_ZOOM_THRESHOLD&&!selectedStateFips){
 
