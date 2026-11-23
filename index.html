@@ -74,13 +74,29 @@
 </div>
 
 <section class="settings-panel" aria-label="Settings">
-  <strong>Settings</strong>
-  <div class="settings-years">
-    <label for="bellwetherYears">Bellwether years (select multiple)</label>
-    <select id="bellwetherYears" multiple size="2" aria-label="Bellwether years">
-      <option value="2000" selected>2000</option><option value="2004" selected>2004</option><option value="2008" selected>2008</option><option value="2012" selected>2012</option><option value="2016" selected>2016</option><option value="2020" selected>2020</option><option value="2024" selected>2024</option>
-    </select>
-    <div class="table-note">A bellwether county matches the national winner in every selected year. Use Command-click on Mac to select or deselect individual years.</div>
+  <strong class="settings-title">Map Settings</strong>
+  <div class="settings-grid">
+    <div class="settings-control">
+      <label for="bellwetherYears">Bellwether county years</label>
+      <select id="bellwetherYears" multiple size="3" aria-label="Bellwether years">
+        <option value="2000" selected>2000</option><option value="2004" selected>2004</option><option value="2008" selected>2008</option><option value="2012" selected>2012</option><option value="2016" selected>2016</option><option value="2020" selected>2020</option><option value="2024" selected>2024</option>
+      </select>
+      <div class="table-note">Automatically identifies counties that voted for the national winner in every selected year.</div>
+    </div>
+    <div class="settings-control">
+      <label for="settingsMapView">Map display</label>
+      <select id="settingsMapView"><option value="state" selected>State View</option><option value="full">Full County View</option></select>
+      <div class="table-note">Choose state overview or show county boundaries across the map.</div>
+    </div>
+    <div class="settings-control">
+      <label for="settingsOutline">County outlines</label>
+      <select id="settingsOutline">
+        <option value="none">Standard — no highlights</option><option value="bellwether">Bellwether Counties</option><option value="swing">Swing Counties (2+ flips)</option><option value="flip2024">Counties that flipped in 2024</option>
+      </select>
+      <div class="table-note">Select which county category to outline.</div>
+    </div>
+    <label class="settings-check"><input type="checkbox" id="compareNpvToggle" checked> Compare county margins with national NPV</label>
+    <div id="settingsMarginSlot"></div>
   </div>
 </section>
 
@@ -312,47 +328,7 @@
 
 
 
-    <div class="control-card">
 
-      <div class="control-card-header">
-
-        <strong>Custom Margin Cutoffs (Points)</strong>
-
-        <button id="resetCutoffsBtn" class="mini-btn" type="button">Standard (1 / 5 / 15)</button>
-
-      </div>
-
-      <div class="cutoff-inputs">
-
-        <div class="cutoff-field">
-
-          <label for="cutoff1">Tilt / Lean</label>
-
-          <input type="number" id="cutoff1" min="0.1" max="50" step="0.5" value="1">
-
-        </div>
-
-        <div class="cutoff-field">
-
-          <label for="cutoff2">Lean / Likely</label>
-
-          <input type="number" id="cutoff2" min="0.5" max="75" step="0.5" value="5">
-
-        </div>
-
-        <div class="cutoff-field">
-
-          <label for="cutoff3">Likely / Safe</label>
-
-          <input type="number" id="cutoff3" min="1" max="99" step="0.5" value="15">
-
-        </div>
-
-      </div>
-
-      <div class="control-hint" id="cutoffSummaryHint">Shading tiers: 0–1 pts, 1–5 pts, 5–15 pts, and over 15 pts.</div>
-
-    </div>
 
   </div>
 
