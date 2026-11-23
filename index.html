@@ -96,7 +96,47 @@
       <div class="table-note">Select which county category to outline.</div>
     </div>
     <label class="settings-check"><input type="checkbox" id="compareNpvToggle" checked> Compare county margins with national NPV</label>
-    <div id="settingsMarginSlot"></div>
+    <div id="settingsMarginSlot">    <div class="control-card">
+
+      <div class="control-card-header">
+
+        <strong>Custom Margin Cutoffs (Points)</strong>
+
+        <button id="resetCutoffsBtn" class="mini-btn" type="button">Standard (1 / 5 / 15)</button>
+
+      </div>
+
+      <div class="cutoff-inputs">
+
+        <div class="cutoff-field">
+
+          <label for="cutoff1">Tilt / Lean</label>
+
+          <input type="number" id="cutoff1" min="0.1" max="50" step="0.5" value="1">
+
+        </div>
+
+        <div class="cutoff-field">
+
+          <label for="cutoff2">Lean / Likely</label>
+
+          <input type="number" id="cutoff2" min="0.5" max="75" step="0.5" value="5">
+
+        </div>
+
+        <div class="cutoff-field">
+
+          <label for="cutoff3">Likely / Safe</label>
+
+          <input type="number" id="cutoff3" min="1" max="99" step="0.5" value="15">
+
+        </div>
+
+      </div>
+
+      <div class="control-hint" id="cutoffSummaryHint">Shading tiers: 0–1 pts, 1–5 pts, 5–15 pts, and over 15 pts.</div>
+
+    </div></div>
   </div>
 </section>
 
