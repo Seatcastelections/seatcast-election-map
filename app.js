@@ -587,11 +587,11 @@ function applyMapView(){
   }
   if(map.getLayer("county-outline")){
     map.setPaintProperty("county-outline","line-opacity",selectedStateFips
-      ?["case",["==",["get","stateFips"],selectedStateFips],0.85,0.12]
-      :0.42);
+      ?["case",["==",["get","stateFips"],selectedStateFips],0.78,0.10]
+      :0.22);
     map.setPaintProperty("county-outline","line-width",selectedStateFips
-      ?["case",["==",["get","stateFips"],selectedStateFips],["interpolate",["linear"],["zoom"],3,0.55,6,1.05,9,1.55],0.35]
-      :["interpolate",["linear"],["zoom"],3,0.35,6,0.75,9,1.15]);
+      ?["case",["==",["get","stateFips"],selectedStateFips],["interpolate",["linear"],["zoom"],3,0.45,6,0.9,9,1.35],0.25]
+      :["interpolate",["linear"],["zoom"],3,0.12,6,0.28,9,0.48]);
   }
   if(map.getLayer("state-outline")){
     map.setPaintProperty("state-outline","line-width",selectedStateFips
