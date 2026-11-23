@@ -134,6 +134,7 @@ let currentRankedRows=[];
 let currentYear=2024;
 
 let npvShift=0;
+let npvTarget=-1.52;
 
 let mapMode="results";
 
@@ -283,7 +284,7 @@ function syncUrlHash(){
 
     params.set("year",currentYear);
 
-    if(npvShift!==0) params.set("npv",npvShift);
+    if(Math.abs(npvTarget-(actualNpvByYear[currentYear]??0))>0.005) params.set("npv",npvTarget);
 
   }else{
 
@@ -495,6 +496,8 @@ document.getElementById("bellwetherYears").addEventListener("change",recalculate
 
 function applyStreakMapHighlight(){
 
+  const visibleOutline=document.getElementById("settingsOutline");
+  if(visibleOutline&&visibleOutline.value!==mapHighlightSelect.value) mapHighlightSelect.value=visibleOutline.value;
   const mode=mapHighlightSelect.value;
 
   if(!map.getLayer("streak-outline")) return;
@@ -587,8 +590,8 @@ function applyMapView(){
   }
   if(map.getLayer("county-outline")){
     map.setPaintProperty("county-outline","line-opacity",selectedStateFips
-      ?["case",["==",["get","stateFips"],selectedStateFips],0.96,0.16]
-      :0.88);
+      ?["case",["==",["get","stateFips"],selectedStateFips],0.85,0.12]
+      :0.42);
     map.setPaintProperty("county-outline","line-width",selectedStateFips
       ?["case",["==",["get","stateFips"],selectedStateFips],["interpolate",["linear"],["zoom"],3,0.55,6,1.05,9,1.55],0.35]
       :["interpolate",["linear"],["zoom"],3,0.35,6,0.75,9,1.15]);
@@ -656,7 +659,7 @@ document.getElementById("fullViewButton").addEventListener("click",()=>{document
 
 function updateResetButtonVisibility(){
 
-  const zoomedIn=map.getZoom()>LOWER48_MIN_ZOOM+0.35||Boolean(selectedStateFips);
+  const zoomedIn=mapRegion!=="lower48"||map.getZoom()>LOWER48_MIN_ZOOM+0.35||Boolean(selectedStateFips);
 
   resetMapButton.style.display=zoomedIn?"inline-block":"none";
 
@@ -753,6 +756,8 @@ function resetToBigMap(){
   hoverTooltip.style.display="none";
 
   mapRegion="lower48";
+  map.setMinZoom(LOWER48_MIN_ZOOM);
+  map.setMaxBounds(null);
 
   const lowerFilter=["in",["get","stateFips"],["literal",["01","04","05","06","08","09","10","11","12","13","16","17","18","19","20","21","22","23","24","25","26","27","28","29","30","31","32","33","34","35","36","37","38","39","40","41","42","44","45","46","47","48","49","50","51","53","54","55","56"]]];
 
@@ -826,21 +831,11 @@ function fmtMarginStr(m){
 // --- NPV Shift Helpers ---
 
 function setNpvShift(val){
-
-  const clamped=Math.max(-50,Math.min(50,Number(val)||0));
-
-  npvShift=Math.round(clamped*100)/100;
-
-  npvSlider.value=Math.max(-15,Math.min(15,npvShift));
-
-  npvInput.value=npvShift;
-
-  if(counties&&mapMode==="results"){
-
-    updateMapForYear(currentYear);
-
-  }
-
+  npvTarget=Math.round(Math.max(-50,Math.min(50,Number(val)||0))*100)/100;
+  npvSlider.value=Math.max(-15,Math.min(15,npvTarget));
+  npvInput.value=npvTarget;
+  npvShift=npvTarget-(actualNpvByYear[currentYear]??0);
+  if(counties&&mapMode==="results") updateMapForYear(currentYear);
 }
 
 
@@ -849,7 +844,7 @@ npvSlider.addEventListener("input",e=>setNpvShift(e.target.value));
 
 npvInput.addEventListener("change",e=>setNpvShift(e.target.value));
 
-document.getElementById("resetNpvBtn").addEventListener("click",()=>setNpvShift(0));
+document.getElementById("resetNpvBtn").addEventListener("click",()=>setNpvShift(-1.52));
 
 document.querySelectorAll(".npv-preset").forEach(btn=>{
 
@@ -857,13 +852,7 @@ document.querySelectorAll(".npv-preset").forEach(btn=>{
 
 });
 
-document.getElementById("tieNpvBtn").addEventListener("click",()=>{
-
-  const actual=actualNpvByYear[currentYear]||0;
-
-  setNpvShift(-actual);
-
-});
+document.getElementById("tieNpvBtn").addEventListener("click",()=>setNpvShift(0));
 
 
 
@@ -1117,7 +1106,7 @@ function updateSummaryBar(){
 
     const repShare=twoPartyTotal>0?(100*repVotes/twoPartyTotal).toFixed(1)+"%":"—";
 
-    const shiftTag=npvShift!==0?` • NPV Shift ${fmtMarginStr(npvShift)}`:"";
+    const shiftTag=npvShift!==0?` • Simulated NPV ${fmtMarginStr(npvTarget)}`:"";
 
 
 
@@ -1362,8 +1351,8 @@ function updateMapForYear(year){
   const electionResults=resultsByYear[currentYear]||{};
 
   const actualNpv=actualNpvByYear[currentYear]??0;
-
-  const simNpv=actualNpv+npvShift;
+  npvShift=npvTarget-actualNpv;
+  const simNpv=npvTarget;
 
 
 
@@ -1377,7 +1366,7 @@ function updateMapForYear(year){
 
 
 
-  const shiftHeadline=npvShift!==0?` (${fmtMarginStr(npvShift)} NPV Shift)`:"";
+  const shiftHeadline=npvShift!==0?` (Simulated NPV: ${fmtMarginStr(npvTarget)})`:"";
 
   document.getElementById("mapTitle").textContent=currentYear+" Presidential Election"+shiftHeadline;
 
@@ -1473,7 +1462,7 @@ function updateMapForYear(year){
 
   syncUrlHash();
 
-  statusBox.textContent="Showing "+currentYear+" presidential results"+(npvShift!==0?` with ${fmtMarginStr(npvShift)} uniform NPV shift`:"")+" | "+Object.keys(electionResults).length+" county records.";
+  statusBox.textContent="Showing "+currentYear+" presidential results"+(npvShift!==0?` adjusted to ${fmtMarginStr(npvTarget)} national NPV`:"")+" | "+Object.keys(electionResults).length+" county records.";
 
 }
 
@@ -1757,7 +1746,16 @@ function zoomToState(stateFeature){
 
 
 
-  const bounds=featureBounds(stateFeature);
+  if(stateFips==="15"){
+    mapRegion="hi";
+    map.setMaxBounds([[-166,16],[-149,26]]);
+    const hiBounds=[[-160.6,18.8],[-154.5,22.5]];
+    const hiCamera=map.cameraForBounds(hiBounds,{padding:45});
+    if(hiCamera&&Number.isFinite(hiCamera.zoom)) map.setMinZoom(Math.max(1,hiCamera.zoom));
+  }
+  const bounds=stateFips==="15"
+    ?new maplibregl.LngLatBounds([-160.6,18.8],[-154.5,22.5])
+    :featureBounds(stateFeature);
 
   if(!bounds.isEmpty()){
 
@@ -2054,7 +2052,7 @@ function openCountyDetailsPopup(p,lngLat){
 
         <div>Actual margin: <strong>${fmtMarginStr(rawMargin)}</strong></div>
 
-        <div>NPV-shifted (${fmtMarginStr(npvShift)}): <strong>${fmtMarginStr(adjMargin)}</strong></div>
+        <div>Simulated national NPV (${fmtMarginStr(npvTarget)}): <strong>${fmtMarginStr(adjMargin)}</strong></div>
 
       </div>`
 
@@ -2435,7 +2433,7 @@ function refreshCountyExplorer(){
 
   const scopePrefix=stateObj&&stateObj.properties?stateObj.properties.name+" — ":"";
 
-  const shiftSuffix=mapMode==="results"&&npvShift!==0?` (${fmtMarginStr(npvShift)} NPV Shift)`:"";
+  const shiftSuffix=mapMode==="results"&&npvShift!==0?` (NPV ${fmtMarginStr(npvTarget)})`:"";
 
 
 
@@ -2801,11 +2799,10 @@ function restoreFromUrlHash(){
 
   if(npv!==null){
 
-    npvShift=Number(npv)||0;
-
-    npvSlider.value=Math.max(-15,Math.min(15,npvShift));
-
-    npvInput.value=npvShift;
+    npvTarget=Number(npv)||0;
+    npvShift=npvTarget-(actualNpvByYear[Number(params.get("year"))||2024]??0);
+    npvSlider.value=Math.max(-15,Math.min(15,npvTarget));
+    npvInput.value=npvTarget;
 
   }
 
@@ -3065,7 +3062,7 @@ map.on("load",async()=>{
 
       id:"county-outline",type:"line",source:"counties",
 
-      paint:{"line-color":"#111827","line-width":["interpolate",["linear"],["zoom"],3,0.35,6,0.75,9,1.15],"line-opacity":0.88}
+      paint:{"line-color":"#64748b","line-width":["interpolate",["linear"],["zoom"],3,0.25,6,0.55,9,0.9],"line-opacity":0.42}
 
     });
 
@@ -3234,12 +3231,12 @@ map.on("load",async()=>{
 
         const cls=m>0?"tt-dem":m<0?"tt-rep":"tt-neutral";
 
-        const adjLabel=npvShift!==0?" (adj.)":"";
+        const adjLabel=npvShift!==0?" (adjusted to target NPV)":"";
 
         statHtml=`<div class="tt-stat ${cls}">${currentYear}: ${fmtMarginStr(m)}${adjLabel}</div>`;
 
         if(document.getElementById("compareNpvToggle")?.checked){
-          const nationalNpv=(actualNpvByYear[currentYear]??0)+npvShift;
+          const nationalNpv=npvTarget;
           const relative=m-nationalNpv;
           const relativeText=relative>0?`D+${relative.toFixed(2)} vs NPV`:relative<0?`R+${Math.abs(relative).toFixed(2)} vs NPV`:"Matches national NPV";
           statHtml+=`<div class="tt-stat tt-neutral">${relativeText} (National: ${fmtMarginStr(nationalNpv)})</div>`;
