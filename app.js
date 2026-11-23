@@ -544,13 +544,17 @@ streakFilter.addEventListener("change",()=>{
 function setMapRegion(region){
 
   mapRegion=region; selectedStateFips=""; selectedCountyFips=""; stateFilter.value="";
-  if(region==="lower48"){
-    map.setMinZoom(LOWER48_MIN_ZOOM);
-    map.setMaxBounds([[-130,20],[-60,55]]);
-  }else{
-    map.setMaxBounds(null);
-    map.setMinZoom(2);
-  }
+  const regionBounds={
+    lower48:LOWER48_BOUNDS,
+    ak:statesByFips["02"]?featureBounds(statesByFips["02"]).toArray():[[-180,51],[-129,72]],
+    hi:statesByFips["15"]?featureBounds(statesByFips["15"]).toArray():[[-161,18],[-154,23]]
+  };
+  const targetBounds=regionBounds[region]||LOWER48_BOUNDS;
+  const camera=map.cameraForBounds(targetBounds,{padding:region==="lower48"?35:45});
+  const startZoom=camera&&Number.isFinite(camera.zoom)?camera.zoom:LOWER48_MIN_ZOOM;
+  map.setMinZoom(Math.max(1,startZoom-0.05));
+  const boundsPad=region==="ak"?[[-188,47],[-122,76]]:region==="hi"?[[-166,16],[-149,26]]:[[-130,20],[-60,55]];
+  map.setMaxBounds(boundsPad);
 
   const ids={lower48:["01","04","05","06","08","09","10","11","12","13","16","17","18","19","20","21","22","23","24","25","26","27","28","29","30","31","32","33","34","35","36","37","38","39","40","41","42","44","45","46","47","48","49","50","51","53","54","55","56"],ak:["02"],hi:["15"]};
 
@@ -574,6 +578,26 @@ function setMapRegion(region){
 function applyMapView(){
 
   const stateOverview=mapView==="state"&&!selectedStateFips;
+
+  // While focused on one state, keep surrounding counties visible but subdued.
+  if(map.getLayer("county-fill")){
+    map.setPaintProperty("county-fill","fill-opacity",selectedStateFips
+      ?["case",["==",["get","stateFips"],selectedStateFips],0.96,0.20]
+      :0.92);
+  }
+  if(map.getLayer("county-outline")){
+    map.setPaintProperty("county-outline","line-opacity",selectedStateFips
+      ?["case",["==",["get","stateFips"],selectedStateFips],0.96,0.16]
+      :0.88);
+    map.setPaintProperty("county-outline","line-width",selectedStateFips
+      ?["case",["==",["get","stateFips"],selectedStateFips],["interpolate",["linear"],["zoom"],3,0.55,6,1.05,9,1.55],0.35]
+      :["interpolate",["linear"],["zoom"],3,0.35,6,0.75,9,1.15]);
+  }
+  if(map.getLayer("state-outline")){
+    map.setPaintProperty("state-outline","line-width",selectedStateFips
+      ?["interpolate",["linear"],["zoom"],2,2.0,5,3.4,8,4.8]
+      :["interpolate",["linear"],["zoom"],2,1.8,5,3.0,8,4.2]);
+  }
 
   ["county-fill","county-outline","hover-outline","selected-outline"].forEach(id=>{
     if(map.getLayer(id)) map.setLayoutProperty(id,"visibility",stateOverview?"none":"visible");
@@ -614,6 +638,19 @@ function setMapView(view){
 document.getElementById("stateViewButton").addEventListener("click",()=>setMapView("state"));
 
 document.getElementById("fullViewButton").addEventListener("click",()=>setMapView("full"));
+
+document.getElementById("settingsMapView").addEventListener("change",event=>setMapView(event.target.value));
+document.getElementById("settingsOutline").addEventListener("change",event=>{
+  mapHighlightSelect.value=event.target.value;
+  mapHighlightSelect.dispatchEvent(new Event("change"));
+});
+mapHighlightSelect.addEventListener("change",()=>{
+  const setting=document.getElementById("settingsOutline");
+  if(setting) setting.value=mapHighlightSelect.value;
+});
+document.getElementById("stateViewButton").addEventListener("click",()=>{document.getElementById("settingsMapView").value="state";});
+document.getElementById("fullViewButton").addEventListener("click",()=>{document.getElementById("settingsMapView").value="full";});
+
 
 
 
@@ -921,20 +958,16 @@ function updateElectoralCollege(){
 
   const stateMargins=[];
 
-  // County-level files may omit DC because it has no counties in the source. DC voted Democratic in every cycle shown; preserve its 3 EVs.
-
-  if(!stateTotals["11"] || (stateTotals["11"].dem+stateTotals["11"].rep)===0){
-
-    demEv+=3;
-
-    stateMargins.push({stFips:"11",name:"District of Columbia",evs:3,margin:100});
-
-  }
+  // DC has three electoral votes and is treated as Democratic in every election shown.
+  // Count it exactly once, regardless of whether the county-results file includes DC.
+  demEv+=3;
+  stateMargins.push({stFips:"11",name:"District of Columbia",evs:3,margin:100});
 
 
 
   Object.entries(evTable).forEach(([stFips,evs])=>{
 
+    if(stFips==="11") return;
     const tot=stateTotals[stFips];
 
     if(!tot||(tot.dem+tot.rep)<=0) return;
@@ -3101,6 +3134,10 @@ map.on("load",async()=>{
     initializeCountyAutocomplete();
     applyMapView();
     applyStreakMapHighlight();
+    const marginCard=document.querySelector("#resultsControls .control-card:has(#cutoff1)");
+    if(marginCard) document.getElementById("settingsMarginSlot").appendChild(marginCard);
+    document.getElementById("settingsOutline").value=mapHighlightSelect.value;
+    document.getElementById("settingsMapView").value=mapView;
 
     statusBox.textContent="Historical election map loaded successfully.";
 
@@ -3200,6 +3237,13 @@ map.on("load",async()=>{
         const adjLabel=npvShift!==0?" (adj.)":"";
 
         statHtml=`<div class="tt-stat ${cls}">${currentYear}: ${fmtMarginStr(m)}${adjLabel}</div>`;
+
+        if(document.getElementById("compareNpvToggle")?.checked){
+          const nationalNpv=(actualNpvByYear[currentYear]??0)+npvShift;
+          const relative=m-nationalNpv;
+          const relativeText=relative>0?`D+${relative.toFixed(2)} vs NPV`:relative<0?`R+${Math.abs(relative).toFixed(2)} vs NPV`:"Matches national NPV";
+          statHtml+=`<div class="tt-stat tt-neutral">${relativeText} (National: ${fmtMarginStr(nationalNpv)})</div>`;
+        }
 
       }
 
