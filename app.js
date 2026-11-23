@@ -143,6 +143,7 @@ let selectedStateFips="";
 let selectedCountyFips="";
 
 let activePopup=null;
+let refreshingCountyPopup=false;
 
 let playInterval=null;
 
@@ -418,14 +419,12 @@ function showCountyPopup(lngLat,html,fips){
 
   activePopup.on("close",()=>{
 
-    selectedCountyFips="";
-
-    syncUrlHash();
-
-    if(map.getLayer("selected-outline")){
-
-      map.setFilter("selected-outline",["==","mapFips",""]);
-
+    if(!refreshingCountyPopup){
+      selectedCountyFips="";
+      syncUrlHash();
+      if(map.getLayer("selected-outline")){
+        map.setFilter("selected-outline",["==","mapFips",""]);
+      }
     }
 
   });
@@ -505,7 +504,7 @@ function applyStreakMapHighlight(){
   const withRegion=categoryFilter=>regionFilter?["all",regionFilter,categoryFilter]:categoryFilter;
 
   if(mode==="none"){
-    map.setFilter("streak-outline",regionFilter||["==","mapFips",""]);
+    map.setFilter("streak-outline",["==","mapFips",""]);
     map.setLayoutProperty("streak-outline","visibility","none");
   }else if(mode==="bellwether"){
     map.setLayoutProperty("streak-outline","visibility","visible");
@@ -1344,6 +1343,15 @@ function updateStateViewColors(){
 
 function updateMapForYear(year){
 
+  const popupFips=(mapMode==="results"&&activePopup)?selectedCountyFips:"";
+  const popupLngLat=(popupFips&&activePopup)?activePopup.getLngLat():null;
+  if(popupFips&&activePopup){
+    refreshingCountyPopup=true;
+    activePopup.remove();
+    activePopup=null;
+    refreshingCountyPopup=false;
+  }
+
   currentYear=Number(year);
 
   const electionResults=resultsByYear[currentYear]||{};
@@ -1449,6 +1457,11 @@ function updateMapForYear(year){
 
 
   map.getSource("counties").setData(counties);
+
+  if(popupFips&&popupLngLat){
+    const refreshedCounty=counties.features.find(feature=>getCountyFips(feature)===popupFips);
+    if(refreshedCounty) openCountyDetailsPopup(refreshedCounty.properties,popupLngLat);
+  }
 
   updateStateViewColors();
 
@@ -1746,10 +1759,15 @@ function zoomToState(stateFeature){
 
   if(stateFips==="15"){
     mapRegion="hi";
-    map.setMaxBounds([[-166,16],[-149,26]]);
     const hiBounds=[[-160.6,18.8],[-154.5,22.5]];
     const hiCamera=map.cameraForBounds(hiBounds,{padding:45});
     if(hiCamera&&Number.isFinite(hiCamera.zoom)) map.setMinZoom(Math.max(1,hiCamera.zoom));
+    map.setMaxBounds([[-166,16],[-149,26]]);
+    const hiFilter=["==",["get","stateFips"],"15"];
+    ["state-fill","county-fill","county-outline","streak-outline","hover-outline","selected-outline"].forEach(id=>{
+      if(map.getLayer(id)) map.setFilter(id,hiFilter);
+    });
+    applyStreakMapHighlight();
   }
   const bounds=stateFips==="15"
     ?new maplibregl.LngLatBounds([-160.6,18.8],[-154.5,22.5])
@@ -3060,7 +3078,7 @@ map.on("load",async()=>{
 
       id:"county-outline",type:"line",source:"counties",
 
-      paint:{"line-color":"#64748b","line-width":["interpolate",["linear"],["zoom"],3,0.25,6,0.55,9,0.9],"line-opacity":0.42}
+      paint:{"line-color":"#64748b","line-width":["interpolate",["linear"],["zoom"],3,0.12,6,0.28,9,0.48],"line-opacity":0.24}
 
     });
 
@@ -3070,7 +3088,7 @@ map.on("load",async()=>{
 
       filter:["==","mapFips",""],
 
-      paint:{"line-color":"#eab308","line-width":1.6,"line-opacity":0.95}
+      paint:{"line-color":"#f59e0b","line-width":["interpolate",["linear"],["zoom"],3,0.8,6,1.35,9,2],"line-opacity":0.98}
 
     });
 
