@@ -496,8 +496,6 @@ document.getElementById("bellwetherYears").addEventListener("change",recalculate
 
 function applyStreakMapHighlight(){
 
-  const visibleOutline=document.getElementById("settingsOutline");
-  if(visibleOutline&&visibleOutline.value!==mapHighlightSelect.value) mapHighlightSelect.value=visibleOutline.value;
   const mode=mapHighlightSelect.value;
 
   if(!map.getLayer("streak-outline")) return;
