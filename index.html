@@ -38,18 +38,7 @@
 
 <div class="subtitle">Explore presidential election results by county, simulate national swings, and compare historical turnout and margins.</div>
 
-<section class="find-county-panel">
-  <strong>Find a County</strong>
-  <div class="find-county-row">
-    <div>
-      <label for="countySearch">Search county and state</label>
-      <input id="countySearch" placeholder="Type at least 3 letters (e.g. Mar for Maricopa)" autocomplete="off">
-      <div class="autocomplete-hint">Suggestions appear after 3 letters and match consecutive letters anywhere in the county name.</div>
-    </div>
-    <button id="countySearchButton" class="action-btn" type="button">Find County</button>
-  </div>
-  <div id="searchMessage">Search for a county to zoom to it on the map.</div>
-</section>
+
 
 <div class="top-controls">
 
@@ -73,7 +62,9 @@
 
 </div>
 
-<section class="settings-panel" aria-label="Settings">
+<details class="settings-details">
+  <summary>Map Settings</summary>
+  <section class="settings-panel" aria-label="Settings">
   <strong class="settings-title">Map Settings</strong>
   <div class="settings-grid">
     <div class="settings-control">
@@ -141,7 +132,8 @@
 
     </div></div>
   </div>
-</section>
+  </section>
+</details>
 
 <!-- Live Electoral College Bar -->
 
@@ -305,6 +297,20 @@
 
     <div class="slider-labels"><span>2000</span><span>2024</span></div>
 
+  <section class="find-county-panel">
+  <strong>Find a County</strong>
+  <div class="find-county-row">
+    <div>
+      <label for="countySearch">Search county and state</label>
+      <input id="countySearch" placeholder="Type at least 3 letters (e.g. Mar for Maricopa)" autocomplete="off">
+      <div class="autocomplete-hint">Suggestions appear after 3 letters and match consecutive letters anywhere in the county name.</div>
+    </div>
+    <button id="countySearchButton" class="action-btn" type="button">Find County</button>
+  </div>
+  <div id="searchMessage">Search for a county to zoom to it on the map.</div>
+</section>
+
+
   </div>
 
 
@@ -315,9 +321,9 @@
 
       <div class="control-card-header">
 
-        <strong>National Popular Vote (NPV) Shift</strong>
+        <strong>Target National Popular Vote (NPV)</strong>
 
-        <button id="resetNpvBtn" class="mini-btn" type="button">Reset (0.0)</button>
+        <button id="resetNpvBtn" class="mini-btn" type="button">Reset (R+1.52)</button>
 
       </div>
 
@@ -333,11 +339,11 @@
 
         <span style="font-size:12px;font-weight:700;color:#c62828">R+15</span>
 
-        <input type="range" id="npvSlider" min="-15" max="15" step="0.5" value="0" aria-label="NPV shift">
+        <input type="range" id="npvSlider" min="-15" max="15" step="0.01" value="-1.52" aria-label="Target national popular vote margin">
 
         <span style="font-size:12px;font-weight:700;color:#2166ac">D+15</span>
 
-        <input type="number" id="npvInput" min="-50" max="50" step="0.5" value="0" aria-label="NPV shift value">
+        <input type="number" id="npvInput" min="-50" max="50" step="0.01" value="-1.52" aria-label="Target national popular vote margin">
 
       </div>
 
@@ -355,7 +361,7 @@
 
       </div>
 
-      <div class="control-hint">Applies a uniform shift to every county's two-party margin and updates Electoral Votes live (+ shifts toward Democrats, − shifts toward Republicans).</div>
+      <div class="control-hint">Sets the national popular vote margin directly, then adjusts every county by the amount needed to reach that target. Updates Electoral Votes live (+ shifts toward Democrats, − shifts toward Republicans).</div>
 
     </div>
 
