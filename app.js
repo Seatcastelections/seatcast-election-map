@@ -552,7 +552,7 @@ function setMapRegion(region){
   const targetBounds=regionBounds[region]||LOWER48_BOUNDS;
   const camera=map.cameraForBounds(targetBounds,{padding:region==="lower48"?35:45});
   const startZoom=camera&&Number.isFinite(camera.zoom)?camera.zoom:LOWER48_MIN_ZOOM;
-  map.setMinZoom(Math.max(1,startZoom-0.05));
+  map.setMinZoom(Math.max(1,startZoom));
   const boundsPad=region==="ak"?[[-188,47],[-122,76]]:region==="hi"?[[-166,16],[-149,26]]:[[-130,20],[-60,55]];
   map.setMaxBounds(boundsPad);
 
