@@ -96,7 +96,10 @@
       <div class="table-note">Select which county category to outline.</div>
     </div>
     <label class="settings-check"><input type="checkbox" id="compareNpvToggle" checked> Compare county margins with national NPV</label>
-    <div id="settingsMarginSlot">    <div class="control-card">
+    <select id="mapHighlightSelect" aria-label="Outline category" style="display:none">
+  <option value="none">Standard</option><option value="bellwether">Bellwether</option><option value="swing">Swing counties</option><option value="flip2024">Flipped in 2024</option>
+</select>
+<div id="settingsMarginSlot">    <div class="control-card">
 
       <div class="control-card-header">
 
@@ -248,17 +251,7 @@
 
     <button id="jumpHawaii" class="map-nav-btn" type="button">Hawaii</button>
 
-    <select id="mapHighlightSelect" class="map-highlight-select" aria-label="Highlight county streaks">
 
-      <option value="none">Outlines: Standard</option>
-
-      <option value="bellwether">Outline: Selected-Year Bellwethers</option>
-
-      <option value="swing">Outline: Swing Counties (2+ Flips)</option>
-
-      <option value="flip2024">Outline: Flipped in 2024</option>
-
-    </select>
 
   </div>
 
