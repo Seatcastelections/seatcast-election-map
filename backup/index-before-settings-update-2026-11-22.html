@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>SeatCast | Presidential Election Maps</title>
+
+<link href="https://unpkg.com/maplibre-gl@5.6.2/dist/maplibre-gl.css" rel="stylesheet">
+
+
+
+<link rel="stylesheet" href="style.css">
+
+</head>
+
+
+
+<body>
+
+<header>
+
+  <div class="brand">Seat<span>Cast</span></div>
+
+</header>
+
+<div id="errorBox"></div>
+
+
+
+<main>
+
+<h1 id="mapTitle">2024 Presidential Election</h1>
+
+<div class="subtitle">Explore presidential election results by county, simulate national swings, and compare historical turnout and margins.</div>
+
+<section class="find-county-panel">
+  <strong>Find a County</strong>
+  <div class="find-county-row">
+    <div>
+      <label for="countySearch">Search county and state</label>
+      <input id="countySearch" placeholder="Type at least 3 letters (e.g. Mar for Maricopa)" autocomplete="off">
+      <div class="autocomplete-hint">Suggestions appear after 3 letters and match consecutive letters anywhere in the county name.</div>
+    </div>
+    <button id="countySearchButton" class="action-btn" type="button">Find County</button>
+  </div>
+  <div id="searchMessage">Search for a county to zoom to it on the map.</div>
+</section>
+
+<div class="top-controls">
+
+  <div class="mode-selector">
+
+    <button id="resultsMode" class="mode-button active">Election Results</button>
+
+    <button id="shiftMode" class="mode-button">County Shift</button>
+
+    <button id="turnoutMode" class="mode-button">Turnout Change</button>
+
+  </div>
+
+  <div class="action-buttons">
+
+    <button id="snapshotButton" class="action-btn" type="button">Save Map PNG</button>
+
+    <button id="shareButton" class="action-btn" type="button">Copy Share Link</button>
+
+  </div>
+
+</div>
+
+<section class="settings-panel" aria-label="Settings">
+  <strong>Settings</strong>
+  <div class="settings-years">
+    <label for="bellwetherYears">Bellwether years (select multiple)</label>
+    <select id="bellwetherYears" multiple size="2" aria-label="Bellwether years">
+      <option value="2000" selected>2000</option><option value="2004" selected>2004</option><option value="2008" selected>2008</option><option value="2012" selected>2012</option><option value="2016" selected>2016</option><option value="2020" selected>2020</option><option value="2024" selected>2024</option>
+    </select>
+    <div class="table-note">A bellwether county matches the national winner in every selected year. Use Command-click on Mac to select or deselect individual years.</div>
+  </div>
+</section>
+
+<!-- Live Electoral College Bar -->
+
+<div class="ec-card" id="ecCard">
+
+  <div class="ec-header">
+
+    <div><span class="ec-dem-score" id="ecDemCount">D: —</span> <span style="color:#667085;font-size:12px">EVs</span></div>
+
+    <div class="ec-center-info">
+
+      <strong>270 Electoral Votes to Win</strong>
+
+      <span id="ecTippingPoint"> • Tipping-Point State: —</span>
+
+    </div>
+
+    <div><span style="color:#667085;font-size:12px">EVs</span> <span class="ec-rep-score" id="ecRepCount">R: —</span></div>
+
+  </div>
+
+  <div class="ec-bar-track">
+
+    <div class="ec-bar-dem" id="ecBarDem" style="width:50%"></div>
+
+    <div class="ec-270-line" title="270 Electoral Votes"></div>
+
+    <div class="ec-bar-rep" id="ecBarRep" style="width:50%"></div>
+
+  </div>
+
+  <div class="ec-footer">
+
+    <span id="ecCycleNote">Uses historical Electoral Vote apportionment (statewide winner-take-all).</span>
+
+    <span id="ecTippingNpv">Tipping-point NPV: —</span>
+
+  </div>
+
+</div>
+
+
+
+<!-- Summary Scoreboard -->
+
+<div class="summary-bar" id="summaryBar">
+
+  <div class="summary-card">
+
+    <div class="summary-label" id="sumScopeLabel">Region</div>
+
+    <div class="summary-value" id="sumScopeVal">United States</div>
+
+    <div class="summary-sub" id="sumScopeSub">2024 General Election</div>
+
+  </div>
+
+  <div class="summary-card">
+
+    <div class="summary-label" id="sumDemLabel">Democratic</div>
+
+    <div class="summary-value text-dem" id="sumDemVal">—</div>
+
+    <div class="summary-sub" id="sumDemSub">—</div>
+
+  </div>
+
+  <div class="summary-card">
+
+    <div class="summary-label" id="sumRepLabel">Republican</div>
+
+    <div class="summary-value text-rep" id="sumRepVal">—</div>
+
+    <div class="summary-sub" id="sumRepSub">—</div>
+
+  </div>
+
+  <div class="summary-card">
+
+    <div class="summary-label" id="sumCountiesLabel">Counties Won</div>
+
+    <div class="summary-value" id="sumCountiesVal">—</div>
+
+    <div class="summary-sub" id="sumCountiesSub">—</div>
+
+  </div>
+
+</div>
+
+
+
+<!-- Interactive Map -->
+
+<div class="map-wrapper">
+
+  <div class="map-topleft-controls">
+
+    <button id="stateViewButton" class="map-nav-btn active" type="button">State View</button>
+
+    <button id="fullViewButton" class="map-nav-btn" type="button">Full County View</button>
+
+    <button id="resetMapButton" class="map-nav-btn" type="button">← Back to US Map</button>
+
+    <button id="jumpLower48" class="map-nav-btn" type="button">Lower 48</button>
+
+    <button id="jumpAlaska" class="map-nav-btn" type="button">Alaska</button>
+
+    <button id="jumpHawaii" class="map-nav-btn" type="button">Hawaii</button>
+
+    <select id="mapHighlightSelect" class="map-highlight-select" aria-label="Highlight county streaks">
+
+      <option value="none">Outlines: Standard</option>
+
+      <option value="bellwether">Outline: Selected-Year Bellwethers</option>
+
+      <option value="swing">Outline: Swing Counties (2+ Flips)</option>
+
+      <option value="flip2024">Outline: Flipped in 2024</option>
+
+    </select>
+
+  </div>
+
+  <div id="hoverTooltip"></div>
+
+  <div id="map"></div>
+
+</div>
+
+
+
+<!-- Results Mode Controls -->
+
+<div id="resultsControls">
+
+  <div class="year-bar">
+
+    <div class="year-heading">
+
+      <div class="year-heading-left">
+
+        <strong>Select an election year</strong>
+
+        <button id="playButton" type="button">▶ Play Timelapse</button>
+
+      </div>
+
+      <span id="selectedYear">2024</span>
+
+    </div>
+
+    <div class="year-buttons">
+
+      <button class="year-button" data-year="2000">2000</button>
+
+      <button class="year-button" data-year="2004">2004</button>
+
+      <button class="year-button" data-year="2008">2008</button>
+
+      <button class="year-button" data-year="2012">2012</button>
+
+      <button class="year-button" data-year="2016">2016</button>
+
+      <button class="year-button" data-year="2020">2020</button>
+
+      <button class="year-button active" data-year="2024">2024</button>
+
+    </div>
+
+    <input type="range" id="yearSlider" min="0" max="6" step="1" value="6" aria-label="Select election year">
+
+    <div class="slider-labels"><span>2000</span><span>2024</span></div>
+
+  </div>
+
+
+
+  <div class="sim-grid">
+
+    <div class="control-card">
+
+      <div class="control-card-header">
+
+        <strong>National Popular Vote (NPV) Shift</strong>
+
+        <button id="resetNpvBtn" class="mini-btn" type="button">Reset (0.0)</button>
+
+      </div>
+
+      <div class="npv-status-row">
+
+        <span>Actual NPV: <strong id="actualNpvText">—</strong></span>
+
+        <span>Simulated NPV: <strong id="simNpvText">—</strong></span>
+
+      </div>
+
+      <div class="npv-slider-row">
+
+        <span style="font-size:12px;font-weight:700;color:#c62828">R+15</span>
+
+        <input type="range" id="npvSlider" min="-15" max="15" step="0.5" value="0" aria-label="NPV shift">
+
+        <span style="font-size:12px;font-weight:700;color:#2166ac">D+15</span>
+
+        <input type="number" id="npvInput" min="-50" max="50" step="0.5" value="0" aria-label="NPV shift value">
+
+      </div>
+
+      <div class="npv-quick-btns">
+
+        <button class="mini-btn npv-preset" data-shift="-5" type="button">R+5 Shift</button>
+
+        <button class="mini-btn npv-preset" data-shift="-2" type="button">R+2 Shift</button>
+
+        <button id="tieNpvBtn" class="mini-btn" type="button">50/50 NPV Tie</button>
+
+        <button class="mini-btn npv-preset" data-shift="2" type="button">D+2 Shift</button>
+
+        <button class="mini-btn npv-preset" data-shift="5" type="button">D+5 Shift</button>
+
+      </div>
+
+      <div class="control-hint">Applies a uniform shift to every county's two-party margin and updates Electoral Votes live (+ shifts toward Democrats, − shifts toward Republicans).</div>
+
+    </div>
+
+
+
+    <div class="control-card">
+
+      <div class="control-card-header">
+
+        <strong>Custom Margin Cutoffs (Points)</strong>
+
+        <button id="resetCutoffsBtn" class="mini-btn" type="button">Standard (1 / 5 / 15)</button>
+
+      </div>
+
+      <div class="cutoff-inputs">
+
+        <div class="cutoff-field">
+
+          <label for="cutoff1">Tilt / Lean</label>
+
+          <input type="number" id="cutoff1" min="0.1" max="50" step="0.5" value="1">
+
+        </div>
+
+        <div class="cutoff-field">
+
+          <label for="cutoff2">Lean / Likely</label>
+
+          <input type="number" id="cutoff2" min="0.5" max="75" step="0.5" value="5">
+
+        </div>
+
+        <div class="cutoff-field">
+
+          <label for="cutoff3">Likely / Safe</label>
+
+          <input type="number" id="cutoff3" min="1" max="99" step="0.5" value="15">
+
+        </div>
+
+      </div>
+
+      <div class="control-hint" id="cutoffSummaryHint">Shading tiers: 0–1 pts, 1–5 pts, 5–15 pts, and over 15 pts.</div>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+
+<!-- Comparison Controls (Shared by County Shift & Turnout Change Modes) -->
+
+<div class="compare-controls" id="compareControls">
+
+  <strong id="compareControlsTitle">Compare two presidential elections</strong>
+
+  <p>
+
+    <span class="compare-select-label">From:</span>
+
+    <select id="fromYear">
+
+      <option value="2000">2000</option><option value="2004">2004</option>
+
+      <option value="2008">2008</option><option value="2012">2012</option>
+
+      <option value="2016" selected>2016</option><option value="2020">2020</option>
+
+      <option value="2024">2024</option>
+
+    </select>
+
+    <span class="compare-select-label">To:</span>
+
+    <select id="toYear">
+
+      <option value="2000">2000</option><option value="2004">2004</option>
+
+      <option value="2008">2008</option><option value="2012">2012</option>
+
+      <option value="2016">2016</option><option value="2020">2020</option>
+
+      <option value="2024" selected>2024</option>
+
+    </select>
+
+  </p>
+
+  <div class="compare-description" id="compareDescription">Positive shifts mean movement toward Democrats. Negative shifts mean movement toward Republicans. The comparison uses the two-party vote margin.</div>
+
+</div>
+
+
+
+<!-- Legends -->
+
+<div class="legend">
+
+  <div id="resultsLegend"></div>
+
+  <div id="shiftLegend">
+
+    <div class="legend-range"><div class="swatch" style="background:#145a96"></div>D+6 or more shift</div>
+
+    <div class="legend-range"><div class="swatch" style="background:#5b9bd5"></div>D+3 to D+6 shift</div>
+
+    <div class="legend-range"><div class="swatch" style="background:#b3d4f0"></div>D+1 to D+3 shift</div>
+
+    <div class="legend-range"><div class="swatch" style="background:#d1d5db"></div>Less than 1 point</div>
+
+    <div class="legend-range"><div class="swatch" style="background:#f2b8b5"></div>R+1 to R+3 shift</div>
+
+    <div class="legend-range"><div class="swatch" style="background:#e47770"></div>R+3 to R+6 shift</div>
+
+    <div class="legend-range"><div class="swatch" style="background:#a91e27"></div>R+6 or more shift</div>
+
+  </div>
+
+  <div id="turnoutLegend">
+
+    <div class="legend-range"><div class="swatch" style="background:#005a32"></div>+25% or more growth</div>
+
+    <div class="legend-range"><div class="swatch" style="background:#238b45"></div>+10% to +25%</div>
+
+    <div class="legend-range"><div class="swatch" style="background:#74c476"></div>+2% to +10%</div>
+
+    <div class="legend-range"><div class="swatch" style="background:#d1d5db"></div>-2% to +2%</div>
+
+    <div class="legend-range"><div class="swatch" style="background:#fec44f"></div>-2% to -10% drop</div>
+
+    <div class="legend-range"><div class="swatch" style="background:#d95f0e"></div>-10% or more drop</div>
+
+    <div class="legend-range"><div class="swatch" style="background:#e5e7eb"></div>No data</div>
+
+  </div>
+
+</div>
+
+
+
+<div id="status">Loading election data...</div>
+
+
+
+<!-- County-to-County Head-to-Head Comparison -->
+
+<section class="h2h-panel">
+
+  <strong style="font-size:19px">County Head-to-Head</strong><div class="table-note">Compare the historical presidential vote margins of any two counties.</div>
+
+  <div class="h2h-grid">
+
+    <div class="explorer-field">
+
+      <label for="h2hCountyA">County A (Blue Line)</label>
+
+      <input id="h2hCountyA" placeholder="Example: Maricopa, AZ" autocomplete="off">
+
+    </div>
+
+    <div class="explorer-field">
+
+      <label for="h2hCountyB">County B (Amber Line)</label>
+
+      <input id="h2hCountyB" placeholder="Example: Dane, WI" autocomplete="off">
+
+    </div>
+
+    <button id="h2hCompareBtn" type="button">Compare Counties</button>
+
+  </div>
+
+  <div id="h2hResult">
+
+    <div class="h2h-layout">
+
+      <div class="h2h-chart-box">
+
+        <div class="h2h-legend" id="h2hLegend"></div>
+
+        <div id="h2hSvgWrap"></div>
+
+      </div>
+
+      <div class="table-wrap">
+
+        <table class="h2h-table" id="h2hTable"></table>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</section>
+
+
+
+<!-- County Rankings: separate from county search and bellwether settings -->
+<section class="explorer-panel">
+  <strong>Rank Counties</strong>
+  <div class="explorer-grid" style="grid-template-columns:repeat(3,minmax(180px,1fr))">
+    <div class="explorer-field">
+      <label for="stateFilter">Filter by state</label>
+      <select id="stateFilter"><option value="">All States (National)</option></select>
+    </div>
+    <div class="explorer-field">
+      <label for="streakFilter">Filter by outline category</label>
+      <select id="streakFilter">
+        <option value="all">All Counties</option><option value="bellwether">Selected-Year Bellwethers</option><option value="swing">Swing Counties (2+ Flips)</option><option value="flip2024">Flipped in 2024</option>
+      </select>
+    </div>
+    <div class="explorer-field">
+      <label for="rankingSort">Rank counties by</label>
+      <select id="rankingSort">
+        <option value="dem">Most Democratic margin</option><option value="rep">Most Republican margin</option><option value="close">Closest margin</option><option value="turnout">Most votes cast</option><option value="shiftDem">Biggest shift toward Democrats</option><option value="shiftRep">Biggest shift toward Republicans</option><option value="flip">Party switches</option><option value="turnoutUp">Biggest turnout growth (%)</option><option value="turnoutDown">Biggest turnout drop (%)</option>
+      </select>
+    </div>
+  </div>
+  <div class="ranking-heading">
+    <h2 id="rankingTitle">County rankings — 2024</h2>
+    <div class="ranking-actions">
+      <label style="font-size:12px;font-weight:700;color:#667085">Show <select id="rankingLimit" class="mini-btn" aria-label="Number of ranked counties"><option value="10" selected>10</option><option value="25">25</option><option value="50">50</option></select></label>
+      <span id="rankingCount"></span>
+      <button id="exportCsvButton" class="mini-btn" type="button">Download CSV</button>
+    </div>
+  </div>
+  <div class="table-wrap"><table id="countyRanking"><thead><tr><th>#</th><th>County</th><th>State</th><th>Margin / Change</th><th>Votes</th><th>Streak</th></tr></thead><tbody id="rankingBody"><tr><td colspan="6">Loading county rankings...</td></tr></tbody></table></div>
+  <div class="table-note" id="rankingNote">Select a row to zoom to that county on the map.</div>
+</section>
+
+</main>
+
+
+
+<footer>SeatCast | Independent Election Analysis</footer>
+
+
+
+<script src="https://unpkg.com/maplibre-gl@5.6.2/dist/maplibre-gl.js"></script>
+
+<script src="https://unpkg.com/topojson-client@3"></script>
+
+
+
+<script src="app.js"></script>
+
+</body>
+
+</html>
