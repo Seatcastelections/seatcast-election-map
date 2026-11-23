@@ -574,7 +574,7 @@ h1 { margin:0 0 7px; font-size:25px; }
 
 
 
-.settings-panel { display:block; background:white; border:1px solid #cbd5e1; border-radius:10px; padding:15px 16px; margin:12px 0; box-shadow:0 2px 8px rgba(0,0,0,.05); }
+.settings-panel { display:block; background:white; border:1px solid #cbd5e1; border-radius:0 0 10px 10px; padding:15px 16px; margin:0; box-shadow:0 2px 8px rgba(0,0,0,.05); }
 .settings-title { display:block; font-size:16px; margin-bottom:12px; }
 .settings-grid { display:grid; grid-template-columns:repeat(3,minmax(180px,1fr)); gap:14px; align-items:start; }
 .settings-control { min-width:0; }
@@ -587,12 +587,16 @@ h1 { margin:0 0 7px; font-size:25px; }
 @media(max-width:850px){ .settings-grid { grid-template-columns:1fr; } #settingsMarginSlot { grid-column:auto; } }
 
 /* Separate county tools */
-.find-county-panel,.settings-panel { background:white; border:1px solid #dce2ea; border-radius:10px; padding:14px 16px; margin:12px 0; box-shadow:0 2px 8px rgba(0,0,0,.05); }
+.find-county-panel { background:white; border:1px solid #dce2ea; border-radius:10px; padding:14px 16px; margin:12px 0; box-shadow:0 2px 8px rgba(0,0,0,.05); }
 .find-county-row { display:grid; grid-template-columns:minmax(220px,1fr) auto; gap:10px; align-items:end; margin-top:10px; max-width:760px; }
 .find-county-row label,.settings-panel label { display:block; font-size:13px; font-weight:700; margin-bottom:6px; }
 .find-county-row input { width:100%; padding:11px; border:1px solid #cbd5e1; border-radius:6px; font-size:15px; }
-.settings-panel { display:flex; align-items:center; flex-wrap:wrap; gap:14px; }
-.settings-panel .settings-years { flex:1; min-width:250px; }
+.settings-details { margin:12px 0; border:1px solid #dce2ea; border-radius:10px; background:white; box-shadow:0 2px 8px rgba(0,0,0,.05); overflow:hidden; }
+.settings-details > summary { cursor:pointer; list-style:none; padding:13px 16px; font-weight:800; color:#172b4d; display:flex; align-items:center; justify-content:space-between; }
+.settings-details > summary::-webkit-details-marker { display:none; }
+.settings-details > summary::after { content:"＋"; font-size:18px; color:#475467; }
+.settings-details[open] > summary::after { content:"−"; }
+.settings-details[open] > summary { border-bottom:1px solid #e2e8f0; background:#f8fafc; }
 .settings-panel select { max-width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:6px; background:white; }
 .autocomplete-hint { color:#667085; font-size:12px; margin-top:5px; }
 
