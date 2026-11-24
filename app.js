@@ -856,7 +856,7 @@ npvSlider.addEventListener("input",e=>setNpvShift(e.target.value));
 
 npvInput.addEventListener("change",e=>setNpvShift(e.target.value));
 
-document.getElementById("resetNpvBtn").addEventListener("click",()=>setNpvShift(-1.52));
+document.getElementById("resetNpvBtn").addEventListener("click",()=>setNpvShift(actualNpvByYear[currentYear]??0));
 
 document.querySelectorAll(".npv-preset").forEach(btn=>{
 
