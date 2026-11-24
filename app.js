@@ -26,15 +26,7 @@ const EV_BY_CYCLE={
 // allocations, not forecast margins. For simulated NPV changes, district electors
 // are left unallocated because district-level presidential margins are not in the
 // county dataset; SeatCast does not invent them.
-const OFFICIAL_DISTRICT_ELECTORS={
-  2000:{"23":["D","D"],"31":["R","R","R"]},
-  2004:{"23":["D","D"],"31":["R","R","R"]},
-  2008:{"23":["D","D"],"31":["R","D","R"]},
-  2012:{"23":["D","D"],"31":["R","R","R"]},
-  2016:{"23":["D","R"],"31":["R","R","R"]},
-  2020:{"23":["D","R"],"31":["R","D","R"]},
-  2024:{"23":["D","R"],"31":["R","D","R"]}
-};
+let OFFICIAL_DISTRICT_ELECTORS={};
 
 const ELECTORAL_COLLEGE_SOURCES={
   allocation:"https://www.archives.gov/electoral-college/allocation",
@@ -2894,6 +2886,15 @@ map.on("load",async()=>{
     if(!dataResponse.ok) throw new Error("Could not load historical JSON. Check that the file is uploaded.");
 
     const electionData=await dataResponse.json();
+
+    // Load historical Maine/Nebraska district elector outcomes from the
+    // National Archives-sourced data file maintained separately in this repo.
+    const ecDataResponse=await fetch("./electoral_college_official.json");
+    if(!ecDataResponse.ok) throw new Error("Could not load official Electoral College source data.");
+    const ecData=await ecDataResponse.json();
+    OFFICIAL_DISTRICT_ELECTORS=Object.fromEntries(
+      Object.entries(ecData.years||{}).map(([year,record])=>[Number(year),{"23":record["23"],"31":record["31"]}])
+    );
 
 
 
