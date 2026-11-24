@@ -914,166 +914,71 @@ document.getElementById("resetCutoffsBtn").addEventListener("click",()=>{
 // --- Live Electoral College Calculator ---
 
 function updateElectoralCollege(){
-
   const ecCard=document.getElementById("ecCard");
-
-  if(mapMode!=="results"){
-
-    ecCard.style.display="none";
-
-    return;
-
-  }
-
+  if(mapMode!=="results"){ecCard.style.display="none";return;}
   ecCard.style.display="block";
-
-
-
   const electionResults=resultsByYear[currentYear]||{};
-
   const evTable=getEvTableForYear(currentYear);
-
   const stateTotals={};
-
-
-
   Object.entries(electionResults).forEach(([fips,r])=>{
-
     const stFips=fips.slice(0,2);
-
     if(!evTable[stFips]) return;
-
     if(!stateTotals[stFips]) stateTotals[stFips]={dem:0,rep:0,rawDem:0,rawRep:0};
-
-    const d=Number(r.dem)||0;
-
-    const rep=Number(r.rep)||0;
-
-    const twoParty=d+rep;
-
-    if(twoParty>0){
-      stateTotals[stFips].rawDem+=d;
-      stateTotals[stFips].rawRep+=rep;
-      const rawM=100*(d-rep)/twoParty;
-
-      const adjM=Math.max(-100,Math.min(100,rawM+npvShift));
-
-      const adjD=twoParty*((100+adjM)/200);
-
-      stateTotals[stFips].dem+=adjD;
-
-      stateTotals[stFips].rep+=(twoParty-adjD);
-
+    const d=Number(r.dem)||0,rep=Number(r.rep)||0,total=d+rep;
+    if(total>0){
+      stateTotals[stFips].rawDem+=d; stateTotals[stFips].rawRep+=rep;
+      const adjusted=Math.max(-100,Math.min(100,100*(d-rep)/total+npvShift));
+      const adjDem=total*((100+adjusted)/200);
+      stateTotals[stFips].dem+=adjDem; stateTotals[stFips].rep+=total-adjDem;
     }
-
   });
-
-
-
-  let demEv=0,repEv=0;
-
-  const stateMargins=[];
-
-  // DC has three electoral votes and is treated as Democratic in every election shown.
-  // Count it exactly once, regardless of whether the county-results file includes DC.
-  demEv+=3;
-  stateMargins.push({stFips:"11",name:"District of Columbia",evs:3,margin:100});
-
-
-
+  let demEv=3,repEv=0,unallocatedEv=0;
+  const stateMargins=[{stFips:"11",name:"District of Columbia",evs:3,margin:100}];
+  const officialDistricts=OFFICIAL_DISTRICT_ELECTORS[currentYear]||{};
   Object.entries(evTable).forEach(([stFips,evs])=>{
-
     if(stFips==="11") return;
-    const tot=stateTotals[stFips];
-    if(!tot||(tot.dem+tot.rep)<=0) return;
-
-    const margin=100*(tot.dem-tot.rep)/(tot.dem+tot.rep);
+    const totals=stateTotals[stFips];
+    if(!totals||(totals.dem+totals.rep)<=0){unallocatedEv+=evs;return;}
+    const margin=100*(totals.dem-totals.rep)/(totals.dem+totals.rep);
     const name=statesByFips[stFips]?.properties?.name||stateAbbrByFips[stFips]||stFips;
-
-    const allocate=(votes,evCount,label)=>{
-      let winner=margin>0?"D":margin<0?"R":null;
-      if(!winner){
-        const rawMargin=(tot.rawDem||0)-(tot.rawRep||0);
-        winner=rawMargin===0?NATIONAL_WINNER[currentYear]:(rawMargin>0?"D":"R");
-      }
-      if(winner==="D") demEv+=evCount; else repEv+=evCount;
-      stateMargins.push({stFips,name:label||name,evs:evCount,margin});
-    };
-
+    const winner=margin>0?"D":margin<0?"R":
+      (totals.rawDem===totals.rawRep?NATIONAL_WINNER[currentYear]:(totals.rawDem>totals.rawRep?"D":"R"));
     if(stFips==="23"||stFips==="31"){
-      // Maine and Nebraska award two electors statewide, then one per district.
-      allocate(0,2,name+" statewide");
-      const districtMargins=ME_NE_DISTRICT_MARGINS[currentYear]?.[stFips];
-      if(!districtMargins) throw new Error("Missing Maine/Nebraska district margins for "+currentYear);
-      districtMargins.forEach((districtMargin,index)=>{
-        const adjusted=Math.max(-100,Math.min(100,districtMargin+npvShift));
-        const winner=adjusted>0?"D":adjusted<0?"R":NATIONAL_WINNER[currentYear];
-        if(winner==="D") demEv++; else repEv++;
-        stateMargins.push({stFips,name:name+" CD"+(index+1),evs:1,margin:adjusted});
-      });
+      if(winner==="D") demEv+=2; else repEv+=2;
+      stateMargins.push({stFips,name:name+" statewide",evs:2,margin});
+      const districtWinners=officialDistricts[stFips]||[];
+      if(npvShift===0 && districtWinners.length===evs-2){
+        districtWinners.forEach((districtWinner,index)=>{
+          if(districtWinner==="D") demEv++; else repEv++;
+          stateMargins.push({stFips,name:name+" CD"+(index+1),evs:1,margin:districtWinner==="D"?100:-100});
+        });
+      }else{
+        unallocatedEv+=evs-2;
+      }
     }else{
-      allocate(0,evs,name);
+      if(winner==="D") demEv+=evs; else repEv+=evs;
+      stateMargins.push({stFips,name,evs,margin});
     }
-
   });
-
-
-
-  // Sort from most Democratic to most Republican to find Tipping-Point State
-
   stateMargins.sort((a,b)=>b.margin-a.margin);
-
-  let cumEv=0;
-
-  let tippingState=null;
-
-  for(const st of stateMargins){
-
-    cumEv+=st.evs;
-
-    if(cumEv>=270){
-
-      tippingState=st;
-
-      break;
-
-    }
-
-  }
-
-
-
-  const allocatedEv=demEv+repEv;
-  document.getElementById("ecDemCount").textContent=allocatedEv===538?`D: ${demEv}`:`D: ${demEv} (incomplete)`;
-  document.getElementById("ecRepCount").textContent=allocatedEv===538?`R: ${repEv}`:`R: ${repEv} • ${538-allocatedEv} unallocated`;
-  document.getElementById("ecBarDem").style.width=`${(demEv/538)*100}%`;
-  document.getElementById("ecBarRep").style.width=`${(repEv/538)*100}%`;
-
-
-
+  let cumulative=0,tippingState=null;
+  for(const state of stateMargins){cumulative+=state.evs;if(cumulative>=270){tippingState=state;break;}}
+  document.getElementById("ecDemCount").textContent=`D: ${demEv}`;
+  document.getElementById("ecRepCount").textContent=unallocatedEv?`R: ${repEv} • ${unallocatedEv} unallocated`:`R: ${repEv}`;
+  document.getElementById("ecBarDem").style.width=`${demEv/538*100}%`;
+  document.getElementById("ecBarRep").style.width=`${repEv/538*100}%`;
   if(tippingState){
-
-    const tippingNpv=npvTarget-tippingState.margin;
-
-    document.getElementById("ecTippingPoint").innerHTML=
-
-      ` • Tipping-Point State: <strong>${esc(tippingState.name)}</strong> (${fmtMarginStr(tippingState.margin)})`;
-
-    document.getElementById("ecTippingNpv").innerHTML=
-
-      `270-EV Tipping-Point NPV: <strong>${fmtMarginStr(tippingNpv)}</strong>`;
-
+    document.getElementById("ecTippingPoint").innerHTML=` • Tipping-Point: <strong>${esc(tippingState.name)}</strong> (${fmtMarginStr(tippingState.margin)})`;
+    document.getElementById("ecTippingNpv").innerHTML=`270-EV Tipping-Point NPV: <strong>${fmtMarginStr(npvTarget-tippingState.margin)}</strong>`;
   }else{
-
     document.getElementById("ecTippingPoint").textContent="";
-
     document.getElementById("ecTippingNpv").textContent="";
-
   }
-
+  const note=document.getElementById("ecSourceNote");
+  if(note) note.textContent=npvShift===0
+    ?`Historical Maine/Nebraska district elector results: National Archives ${currentYear}. State EV allocation: National Archives.`
+    :`Maine/Nebraska district EVs are unallocated in this NPV scenario because verified district-level forecast margins are unavailable.`;
 }
-
-
 
 // --- Dynamic Summary Scoreboard ---
 
