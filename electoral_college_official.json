@@ -1,0 +1,91 @@
+{
+  "source": "National Archives and Records Administration — Electoral College Results",
+  "source_url": "https://www.archives.gov/electoral-college",
+  "note": "Historical Maine and Nebraska district elector winners, transcribed from the official state-by-state Electoral College result tables. These are actual historical allocations, not district vote margins.",
+  "years": {
+    "2000": {
+      "23": [
+        "D",
+        "D"
+      ],
+      "31": [
+        "R",
+        "R",
+        "R"
+      ],
+      "source": "https://www.archives.gov/electoral-college/2000"
+    },
+    "2004": {
+      "23": [
+        "D",
+        "D"
+      ],
+      "31": [
+        "R",
+        "R",
+        "R"
+      ],
+      "source": "https://www.archives.gov/electoral-college/2004"
+    },
+    "2008": {
+      "23": [
+        "D",
+        "D"
+      ],
+      "31": [
+        "R",
+        "D",
+        "R"
+      ],
+      "source": "https://www.archives.gov/electoral-college/2008"
+    },
+    "2012": {
+      "23": [
+        "D",
+        "D"
+      ],
+      "31": [
+        "R",
+        "R",
+        "R"
+      ],
+      "source": "https://www.archives.gov/electoral-college/2012"
+    },
+    "2016": {
+      "23": [
+        "D",
+        "R"
+      ],
+      "31": [
+        "R",
+        "R",
+        "R"
+      ],
+      "source": "https://www.archives.gov/electoral-college/2016"
+    },
+    "2020": {
+      "23": [
+        "D",
+        "R"
+      ],
+      "31": [
+        "R",
+        "D",
+        "R"
+      ],
+      "source": "https://www.archives.gov/electoral-college/2020"
+    },
+    "2024": {
+      "23": [
+        "D",
+        "R"
+      ],
+      "31": [
+        "R",
+        "D",
+        "R"
+      ],
+      "source": "https://www.archives.gov/electoral-college/2024"
+    }
+  }
+}
