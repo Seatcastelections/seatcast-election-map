@@ -1511,6 +1511,12 @@ function updateMapForCompare(){
 
     p.shiftAvailable=false;
 
+    p.nationalShift=null;
+
+    p.relativeShift=null;
+
+    p.relativeShiftAvailable=false;
+
     p.turnoutPct=null;
 
     p.turnoutDiff=null;
@@ -1568,6 +1574,16 @@ function updateMapForCompare(){
       p.shift=newMargin-oldMargin;
 
       p.shiftAvailable=true;
+
+      const nationalOld=actualNpvByYear[fromYear];
+
+      const nationalNew=actualNpvByYear[toYear];
+
+      if(Number.isFinite(nationalOld)&&Number.isFinite(nationalNew)){
+        p.nationalShift=nationalNew-nationalOld;
+        p.relativeShift=p.shift-p.nationalShift;
+        p.relativeShiftAvailable=true;
+      }
 
       p.rawMargin=newMargin;
 
