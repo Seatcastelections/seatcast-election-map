@@ -21,6 +21,19 @@ const EV_BY_CYCLE={
 
 
 
+// Democratic-minus-Republican district margins for Maine and Nebraska.
+// Maine: statewide + two districts; Nebraska: statewide + three districts.
+// Source: published historical district-level presidential margin tables.
+const ME_NE_DISTRICT_MARGINS={
+  2000:{"23":[7.9,1.9],"31":[-23.0,-18.4,-46.4]},
+  2004:{"23":[12.0,6.0],"31":[-27.0,-22.0,-51.0]},
+  2008:{"23":[22.8,11.3],"31":[-9.8,1.3,-39.0]},
+  2012:{"23":[21.4,8.6],"31":[-16.6,-7.2,-42.4]},
+  2016:{"23":[14.8,-10.3],"31":[-20.7,-2.2,-54.2]},
+  2020:{"23":[23.1,-7.4],"31":[-14.9,6.6,-53.2]},
+  2024:{"23":[21.5,-9.0],"31":[-13.0,4.6,-53.6]}
+};
+
 function getEvTableForYear(yr){
 
   if(yr<=2000) return EV_BY_CYCLE["2000"];
@@ -135,6 +148,8 @@ let currentYear=2024;
 
 let npvShift=0;
 let npvTarget=-1.52;
+let npvYearInitialized=false;
+let hasUrlNpvOverride=false;
 
 let mapMode="results";
 
@@ -495,27 +510,26 @@ document.getElementById("bellwetherYears").addEventListener("change",recalculate
 
 function applyStreakMapHighlight(){
 
-  const mode=mapHighlightSelect.value;
-
+  const mode=["none","bellwether","swing","flip2024"].includes(mapHighlightSelect.value)
+    ?mapHighlightSelect.value:"none";
   if(!map.getLayer("streak-outline")) return;
 
-  // Keep outline categories limited to the currently displayed region.
-  const regionFilter=map.getLayer("county-fill")?map.getFilter("county-fill"):null;
-  const withRegion=categoryFilter=>regionFilter?["all",regionFilter,categoryFilter]:categoryFilter;
-
+  // This layer is ONLY the optional category highlight; ordinary county borders
+  // are handled independently by county-outline.
   if(mode==="none"){
-    map.setFilter("streak-outline",["==","mapFips",""]);
+    map.setFilter("streak-outline",["==",["get","mapFips"],"__no_county__"]);
     map.setLayoutProperty("streak-outline","visibility","none");
-  }else if(mode==="bellwether"){
-    map.setLayoutProperty("streak-outline","visibility","visible");
-    map.setFilter("streak-outline",withRegion(["==",["get","isBellwether"],true]));
-  }else if(mode==="swing"){
-    map.setLayoutProperty("streak-outline","visibility","visible");
-    map.setFilter("streak-outline",withRegion([">=",["get","flipCount"],2]));
-  }else if(mode==="flip2024"){
-    map.setLayoutProperty("streak-outline","visibility","visible");
-    map.setFilter("streak-outline",withRegion(["==",["get","flipped2024"],true]));
+    return;
   }
+
+  const regionFilter=map.getLayer("county-fill")?map.getFilter("county-fill"):null;
+  const categoryFilter=mode==="bellwether"
+    ?["==",["get","isBellwether"],true]
+    :mode==="swing"
+      ?[">=",["get","flipCount"],2]
+      :["==",["get","flipped2024"],true];
+  map.setFilter("streak-outline",regionFilter?["all",regionFilter,categoryFilter]:categoryFilter);
+  map.setLayoutProperty("streak-outline","visibility","visible");
 
 }
 
@@ -586,12 +600,13 @@ function applyMapView(){
       :0.92);
   }
   if(map.getLayer("county-outline")){
+    map.setPaintProperty("county-outline","line-color","#111827");
     map.setPaintProperty("county-outline","line-opacity",selectedStateFips
-      ?["case",["==",["get","stateFips"],selectedStateFips],0.78,0.10]
-      :0.22);
+      ?["case",["==",["get","stateFips"],selectedStateFips],0.92,0.10]
+      :0.18);
     map.setPaintProperty("county-outline","line-width",selectedStateFips
-      ?["case",["==",["get","stateFips"],selectedStateFips],["interpolate",["linear"],["zoom"],3,0.45,6,0.9,9,1.35],0.25]
-      :["interpolate",["linear"],["zoom"],3,0.12,6,0.28,9,0.48]);
+      ?["case",["==",["get","stateFips"],selectedStateFips],["interpolate",["linear"],["zoom"],3,0.8,6,1.35,9,1.9],0.25]
+      :["interpolate",["linear"],["zoom"],3,0.10,6,0.22,9,0.38]);
   }
   if(map.getLayer("state-outline")){
     map.setPaintProperty("state-outline","line-width",selectedStateFips
@@ -955,23 +970,35 @@ function updateElectoralCollege(){
 
     if(stFips==="11") return;
     const tot=stateTotals[stFips];
-
     if(!tot||(tot.dem+tot.rep)<=0) return;
 
     const margin=100*(tot.dem-tot.rep)/(tot.dem+tot.rep);
-
-    if(margin>0) demEv+=evs;
-    else if(margin<0) repEv+=evs;
-    else {
-      // A simulated exact tie still needs a winner so the EV total remains 538.
-      const rawMargin=(tot.rawDem||0)-(tot.rawRep||0);
-      const tieWinner=rawMargin===0?NATIONAL_WINNER[currentYear]:(rawMargin>0?"D":"R");
-      if(tieWinner==="D") demEv+=evs; else repEv+=evs;
-    }
-
     const name=statesByFips[stFips]?.properties?.name||stateAbbrByFips[stFips]||stFips;
 
-    stateMargins.push({stFips,name,evs,margin});
+    const allocate=(votes,evCount,label)=>{
+      let winner=margin>0?"D":margin<0?"R":null;
+      if(!winner){
+        const rawMargin=(tot.rawDem||0)-(tot.rawRep||0);
+        winner=rawMargin===0?NATIONAL_WINNER[currentYear]:(rawMargin>0?"D":"R");
+      }
+      if(winner==="D") demEv+=evCount; else repEv+=evCount;
+      stateMargins.push({stFips,name:label||name,evs:evCount,margin});
+    };
+
+    if(stFips==="23"||stFips==="31"){
+      // Maine and Nebraska award two electors statewide, then one per district.
+      allocate(0,2,name+" statewide");
+      const districtMargins=ME_NE_DISTRICT_MARGINS[currentYear]?.[stFips];
+      if(!districtMargins) throw new Error("Missing Maine/Nebraska district margins for "+currentYear);
+      districtMargins.forEach((districtMargin,index)=>{
+        const adjusted=Math.max(-100,Math.min(100,districtMargin+npvShift));
+        const winner=adjusted>0?"D":adjusted<0?"R":NATIONAL_WINNER[currentYear];
+        if(winner==="D") demEv++; else repEv++;
+        stateMargins.push({stFips,name:name+" CD"+(index+1),evs:1,margin:adjusted});
+      });
+    }else{
+      allocate(0,evs,name);
+    }
 
   });
 
@@ -1001,21 +1028,17 @@ function updateElectoralCollege(){
 
 
 
-  document.getElementById("ecDemCount").textContent=`D: ${demEv}`;
-
-  document.getElementById("ecRepCount").textContent=`R: ${repEv}`;
-
+  const allocatedEv=demEv+repEv;
+  document.getElementById("ecDemCount").textContent=allocatedEv===538?`D: ${demEv}`:`D: ${demEv} (incomplete)`;
+  document.getElementById("ecRepCount").textContent=allocatedEv===538?`R: ${repEv}`:`R: ${repEv} • ${538-allocatedEv} unallocated`;
   document.getElementById("ecBarDem").style.width=`${(demEv/538)*100}%`;
-
   document.getElementById("ecBarRep").style.width=`${(repEv/538)*100}%`;
 
 
 
   if(tippingState){
 
-    const actualNpv=actualNpvByYear[currentYear]??0;
-
-    const tippingNpv=actualNpv-tippingState.margin;
+    const tippingNpv=npvTarget-tippingState.margin;
 
     document.getElementById("ecTippingPoint").innerHTML=
 
@@ -1352,11 +1375,18 @@ function updateMapForYear(year){
     refreshingCountyPopup=false;
   }
 
-  currentYear=Number(year);
+  const requestedYear=Number(year);
+  const yearChanged=requestedYear!==currentYear;
+  currentYear=requestedYear;
 
   const electionResults=resultsByYear[currentYear]||{};
-
   const actualNpv=actualNpvByYear[currentYear]??0;
+  if((!npvYearInitialized&&!hasUrlNpvOverride)||(yearChanged&&!isRestoringHash)){
+    npvTarget=actualNpv;
+    npvSlider.value=Math.max(-15,Math.min(15,npvTarget));
+    npvInput.value=npvTarget.toFixed(2);
+  }
+  npvYearInitialized=true;
   npvShift=npvTarget-actualNpv;
   const simNpv=npvTarget;
 
@@ -2816,6 +2846,7 @@ function restoreFromUrlHash(){
   if(npv!==null){
 
     npvTarget=Number(npv)||0;
+    hasUrlNpvOverride=true;
     npvShift=npvTarget-(actualNpvByYear[Number(params.get("year"))||2024]??0);
     npvSlider.value=Math.max(-15,Math.min(15,npvTarget));
     npvInput.value=npvTarget;
@@ -3088,7 +3119,7 @@ map.on("load",async()=>{
 
       filter:["==","mapFips",""],
 
-      paint:{"line-color":"#f59e0b","line-width":["interpolate",["linear"],["zoom"],3,0.8,6,1.35,9,2],"line-opacity":0.98}
+      paint:{"line-color":"#f59e0b","line-width":["interpolate",["linear"],["zoom"],3,0.35,6,0.65,9,1.0],"line-opacity":0.92}
 
     });
 
@@ -3108,7 +3139,7 @@ map.on("load",async()=>{
 
       filter:["==","mapFips",""],
 
-      paint:{"line-color":"#f59e0b","line-width":2.6}
+      paint:{"line-color":"#111827","line-width":2.0}
 
     });
 
