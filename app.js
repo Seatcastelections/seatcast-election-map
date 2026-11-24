@@ -611,11 +611,11 @@ function applyMapView(){
   if(map.getLayer("county-outline")){
     map.setPaintProperty("county-outline","line-color","#111827");
     map.setPaintProperty("county-outline","line-opacity",selectedStateFips
-      ?["case",["==",["get","stateFips"],selectedStateFips],0.98,0.10]
-      :0.34);
+      ?["case",["==",["get","stateFips"],selectedStateFips],1.0,0.06]
+      :0.13);
     map.setPaintProperty("county-outline","line-width",selectedStateFips
-      ?["case",["==",["get","stateFips"],selectedStateFips],["interpolate",["linear"],["zoom"],3,1.0,6,1.55,9,2.0],0.18]
-      :["interpolate",["linear"],["zoom"],3,0.14,6,0.25,9,0.38]);
+      ?["case",["==",["get","stateFips"],selectedStateFips],["interpolate",["linear"],["zoom"],3,1.35,6,1.9,9,2.5],0.12]
+      :["interpolate",["linear"],["zoom"],3,0.08,6,0.14,9,0.22]);
   }
   if(map.getLayer("state-outline")){
     map.setPaintProperty("state-outline","line-width",selectedStateFips
