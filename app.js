@@ -3239,9 +3239,9 @@ map.on("load",async()=>{
         const cls=pct>=0?"tt-green":"tt-amber";
 
         statHtml=`<div class="tt-stat ${cls}">${p.fromYear}→${p.toYear}: ${pct>=0?"+":""}${pct.toFixed(2)}% ballots</div>`;
-        if(p.relativeShiftAvailable){
-          const rs=Number(p.relativeShift),rcls=rs>0?"tt-dem":rs<0?"tt-rep":"tt-neutral";
-          statHtml+=`<div class="tt-stat ${rcls}">Partisan shift vs. nation: ${fmtMarginStr(rs)}</div>`;
+        if(Number.isFinite(Number(p.relativeTurnoutPct))){
+          const rs=Number(p.relativeTurnoutPct),rcls=rs>0?"tt-green":rs<0?"tt-amber":"tt-neutral";
+          statHtml+=`<div class="tt-stat ${rcls}">Turnout growth vs. nation: ${rs>=0?"+":""}${rs.toFixed(2)} percentage points</div>`;
         }
 
       }else if(mapMode==="shift"&&p.shiftAvailable){
