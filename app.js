@@ -21,17 +21,32 @@ const EV_BY_CYCLE={
 
 
 
-// Democratic-minus-Republican district margins for Maine and Nebraska.
-// Maine: statewide + two districts; Nebraska: statewide + three districts.
-// Source: published historical district-level presidential margin tables.
-const ME_NE_DISTRICT_MARGINS={
-  2000:{"23":[7.9,1.9],"31":[-23.0,-18.4,-46.4]},
-  2004:{"23":[12.0,6.0],"31":[-27.0,-22.0,-51.0]},
-  2008:{"23":[22.8,11.3],"31":[-9.8,1.3,-39.0]},
-  2012:{"23":[21.4,8.6],"31":[-16.6,-7.2,-42.4]},
-  2016:{"23":[14.8,-10.3],"31":[-20.7,-2.2,-54.2]},
-  2020:{"23":[23.1,-7.4],"31":[-14.9,6.6,-53.2]},
-  2024:{"23":[21.5,-9.0],"31":[-13.0,4.6,-53.6]}
+// Historical Maine/Nebraska district elector winners transcribed from the
+// National Archives Electoral College result tables. These are actual historical
+// allocations, not forecast margins. For simulated NPV changes, district electors
+// are left unallocated because district-level presidential margins are not in the
+// county dataset; SeatCast does not invent them.
+const OFFICIAL_DISTRICT_ELECTORS={
+  2000:{"23":["D","D"],"31":["R","R","R"]},
+  2004:{"23":["D","D"],"31":["R","R","R"]},
+  2008:{"23":["D","D"],"31":["R","D","R"]},
+  2012:{"23":["D","D"],"31":["R","R","R"]},
+  2016:{"23":["D","R"],"31":["R","R","R"]},
+  2020:{"23":["D","R"],"31":["R","D","R"]},
+  2024:{"23":["D","R"],"31":["R","D","R"]}
+};
+
+const ELECTORAL_COLLEGE_SOURCES={
+  allocation:"https://www.archives.gov/electoral-college/allocation",
+  results:{
+    2000:"https://www.archives.gov/electoral-college/2000",
+    2004:"https://www.archives.gov/electoral-college/2004",
+    2008:"https://www.archives.gov/electoral-college/2008",
+    2012:"https://www.archives.gov/electoral-college/2012",
+    2016:"https://www.archives.gov/electoral-college/2016",
+    2020:"https://www.archives.gov/electoral-college/2020",
+    2024:"https://www.archives.gov/electoral-college/2024"
+  }
 };
 
 function getEvTableForYear(yr){
@@ -602,11 +617,11 @@ function applyMapView(){
   if(map.getLayer("county-outline")){
     map.setPaintProperty("county-outline","line-color","#111827");
     map.setPaintProperty("county-outline","line-opacity",selectedStateFips
-      ?["case",["==",["get","stateFips"],selectedStateFips],0.92,0.10]
-      :0.18);
+      ?["case",["==",["get","stateFips"],selectedStateFips],0.98,0.16]
+      :0.72);
     map.setPaintProperty("county-outline","line-width",selectedStateFips
       ?["case",["==",["get","stateFips"],selectedStateFips],["interpolate",["linear"],["zoom"],3,0.8,6,1.35,9,1.9],0.25]
-      :["interpolate",["linear"],["zoom"],3,0.10,6,0.22,9,0.38]);
+      :["interpolate",["linear"],["zoom"],3,0.22,6,0.42,9,0.62]);
   }
   if(map.getLayer("state-outline")){
     map.setPaintProperty("state-outline","line-width",selectedStateFips
@@ -2757,13 +2772,13 @@ function showMapMode(mode){
 
     document.getElementById("compareControlsTitle").textContent="Compare two presidential elections (Margin Shift)";
 
-    document.getElementById("compareDescription").textContent="Positive shifts mean movement toward Democrats. Negative shifts mean movement toward Republicans. The comparison uses the two-party vote margin.";
+    document.getElementById("compareDescription").textContent="Positive shifts mean movement toward Democrats. Negative shifts mean movement toward Republicans. County details also compare each county's shift with the national shift.";
 
   }else if(mode==="turnout"){
 
     document.getElementById("compareControlsTitle").textContent="Compare two presidential elections (Turnout Change)";
 
-    document.getElementById("compareDescription").textContent="Green indicates growth in total ballots cast; amber/orange indicates a drop in total ballots cast between the two elections.";
+    document.getElementById("compareDescription").textContent="Green indicates growth in ballots cast; amber/orange indicates a drop. County details also show partisan shift relative to the national shift.";
 
   }
 
@@ -3109,7 +3124,7 @@ map.on("load",async()=>{
 
       id:"county-outline",type:"line",source:"counties",
 
-      paint:{"line-color":"#64748b","line-width":["interpolate",["linear"],["zoom"],3,0.12,6,0.28,9,0.48],"line-opacity":0.24}
+      paint:{"line-color":"#000000","line-width":["interpolate",["linear"],["zoom"],3,0.22,6,0.42,9,0.62],"line-opacity":0.72}
 
     });
 
@@ -3119,7 +3134,7 @@ map.on("load",async()=>{
 
       filter:["==","mapFips",""],
 
-      paint:{"line-color":"#f59e0b","line-width":["interpolate",["linear"],["zoom"],3,0.35,6,0.65,9,1.0],"line-opacity":0.92}
+      paint:{"line-color":"#f59e0b","line-width":["interpolate",["linear"],["zoom"],3,0.18,6,0.30,9,0.45],"line-opacity":0.70}
 
     });
 
@@ -3139,7 +3154,7 @@ map.on("load",async()=>{
 
       filter:["==","mapFips",""],
 
-      paint:{"line-color":"#111827","line-width":2.0}
+      paint:{"line-color":"#000000","line-width":1.4}
 
     });
 
@@ -3261,6 +3276,10 @@ map.on("load",async()=>{
         const cls=pct>=0?"tt-green":"tt-amber";
 
         statHtml=`<div class="tt-stat ${cls}">${p.fromYear}→${p.toYear}: ${pct>=0?"+":""}${pct.toFixed(2)}% ballots</div>`;
+        if(p.relativeShiftAvailable){
+          const rs=Number(p.relativeShift),rcls=rs>0?"tt-dem":rs<0?"tt-rep":"tt-neutral";
+          statHtml+=`<div class="tt-stat ${rcls}">Partisan shift vs. nation: ${fmtMarginStr(rs)}</div>`;
+        }
 
       }else if(mapMode==="shift"&&p.shiftAvailable){
 
@@ -3271,6 +3290,10 @@ map.on("load",async()=>{
         const txt=s>0?`D+${s.toFixed(2)} shift`:s<0?`R+${Math.abs(s).toFixed(2)} shift`:"No change";
 
         statHtml=`<div class="tt-stat ${cls}">${p.fromYear}→${p.toYear}: ${txt}</div>`;
+        if(p.relativeShiftAvailable){
+          const rs=Number(p.relativeShift),rcls=rs>0?"tt-dem":rs<0?"tt-rep":"tt-neutral";
+          statHtml+=`<div class="tt-stat ${rcls}">Shift vs. nation: ${fmtMarginStr(rs)}</div>`;
+        }
 
       }else if(mapMode==="results"&&p.margin!==null&&p.margin!==undefined){
 
