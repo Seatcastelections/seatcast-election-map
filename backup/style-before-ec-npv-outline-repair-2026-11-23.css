@@ -1,0 +1,725 @@
+
+* { box-sizing: border-box; }
+
+body { margin:0; font-family:Arial,sans-serif; background:#f4f6f9; color:#172033; }
+
+header { background:#101827; color:white; padding:18px 22px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; }
+
+.brand { font-size:27px; font-weight:800; letter-spacing:-1px; }
+
+.brand span { color:#4da3ff; }
+
+main { padding:20px; max-width:1400px; margin:0 auto; }
+
+h1 { margin:0 0 7px; font-size:25px; }
+
+.subtitle { color:#667085; margin-bottom:16px; }
+
+
+
+.top-controls { display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:12px; flex-wrap:wrap; }
+
+.mode-selector, .action-buttons { display:flex; gap:8px; flex-wrap:wrap; }
+
+.mode-button { padding:11px 16px; border:1px solid #cbd5e1; border-radius:7px; background:white; cursor:pointer; font-weight:bold; font-size:14px; }
+
+.mode-button:hover { background:#e8f1fc; }
+
+.mode-button.active { background:#172b4d; color:white; border-color:#172b4d; }
+
+
+
+.action-btn { padding:10px 14px; border:1px solid #cbd5e1; border-radius:7px; background:white; color:#172b4d; font-weight:700; font-size:13px; cursor:pointer; }
+
+.action-btn:hover { background:#e8f1fc; }
+
+
+
+/* Electoral College Bar */
+
+.ec-card {
+
+  background:white;
+
+  border:1px solid #dce2ea;
+
+  border-radius:10px;
+
+  padding:14px 16px;
+
+  margin-bottom:12px;
+
+  box-shadow:0 2px 6px rgba(0,0,0,.04);
+
+}
+
+.ec-header {
+
+  display:flex;
+
+  justify-content:space-between;
+
+  align-items:center;
+
+  flex-wrap:wrap;
+
+  gap:8px;
+
+  margin-bottom:8px;
+
+  font-size:14px;
+
+}
+
+.ec-dem-score { color:#2166ac; font-weight:800; font-size:18px; }
+
+.ec-rep-score { color:#c62828; font-weight:800; font-size:18px; }
+
+.ec-center-info { color:#475467; font-size:12.5px; text-align:center; }
+
+.ec-bar-track {
+
+  position:relative;
+
+  width:100%;
+
+  height:18px;
+
+  background:#e2e8f0;
+
+  border-radius:9px;
+
+  overflow:hidden;
+
+  display:flex;
+
+  justify-content:space-between;
+
+}
+
+.ec-bar-dem { height:100%; background:#2166ac; transition:width 0.25s ease; }
+
+.ec-bar-rep { height:100%; background:#c62828; transition:width 0.25s ease; }
+
+.ec-270-line {
+
+  position:absolute;
+
+  left:50%;
+
+  top:0;
+
+  bottom:0;
+
+  width:2px;
+
+  background:#101827;
+
+  z-index:2;
+
+}
+
+.ec-footer {
+
+  display:flex;
+
+  justify-content:space-between;
+
+  flex-wrap:wrap;
+
+  gap:8px;
+
+  margin-top:7px;
+
+  font-size:12px;
+
+  color:#667085;
+
+}
+
+
+
+/* Summary Scoreboard */
+
+.summary-bar {
+
+  display:grid;
+
+  grid-template-columns:repeat(4, minmax(150px, 1fr));
+
+  gap:12px;
+
+  margin-bottom:14px;
+
+}
+
+.summary-card {
+
+  background:white;
+
+  border:1px solid #dce2ea;
+
+  border-radius:10px;
+
+  padding:12px 15px;
+
+  box-shadow:0 2px 6px rgba(0,0,0,.04);
+
+}
+
+.summary-label { font-size:12px; color:#667085; font-weight:700; text-transform:uppercase; letter-spacing:0.3px; }
+
+.summary-value { font-size:19px; font-weight:800; margin-top:4px; color:#172033; }
+
+.summary-sub { font-size:12px; color:#667085; margin-top:2px; }
+
+.text-dem { color:#2166ac; }
+
+.text-rep { color:#c62828; }
+
+.text-green { color:#15803d; }
+
+
+
+/* Map & Floating Controls */
+
+.map-wrapper { position:relative; width:100%; border-radius:10px; overflow:hidden; border:1px solid #dce2ea; }
+
+#map { width:100%; height:650px; background:#e8edf3; }
+
+
+
+.map-topleft-controls {
+
+  position:absolute;
+
+  top:12px;
+
+  left:12px;
+
+  z-index:5;
+
+  display:flex;
+
+  gap:6px;
+
+  flex-wrap:wrap;
+
+  align-items:center;
+
+}
+
+.map-nav-btn, .map-highlight-select {
+
+  padding:8px 11px;
+
+  border:1px solid #cbd5e1;
+
+  border-radius:7px;
+
+  background:white;
+
+  color:#172b4d;
+
+  font-weight:700;
+
+  font-size:12.5px;
+
+  cursor:pointer;
+
+  box-shadow:0 2px 8px rgba(0,0,0,0.14);
+
+}
+
+.map-nav-btn:hover { background:#e8f1fc; }
+
+#resetMapButton { display:none; background:#172b4d; color:white; border-color:#172b4d; }
+
+#resetMapButton:hover { background:#243f6e; }
+
+
+
+#hoverTooltip {
+
+  display:none;
+
+  position:absolute;
+
+  z-index:6;
+
+  pointer-events:none;
+
+  background:rgba(16, 24, 39, 0.94);
+
+  color:white;
+
+  padding:8px 11px;
+
+  border-radius:7px;
+
+  font-size:13px;
+
+  line-height:1.4;
+
+  box-shadow:0 4px 12px rgba(0,0,0,0.2);
+
+  max-width:260px;
+
+}
+
+#hoverTooltip .tt-title { font-weight:700; font-size:13.5px; }
+
+#hoverTooltip .tt-stat { margin-top:2px; font-weight:700; }
+
+#hoverTooltip .tt-dem { color:#7cc0ff; }
+
+#hoverTooltip .tt-rep { color:#ff8a8a; }
+
+#hoverTooltip .tt-green { color:#86efac; }
+
+#hoverTooltip .tt-amber { color:#fcd34d; }
+
+#hoverTooltip .tt-neutral { color:#d1d5db; }
+
+#hoverTooltip .tt-badge { color:#fde047; font-size:11px; margin-top:2px; font-weight:700; }
+
+#hoverTooltip .tt-hint { color:#94a3b8; font-size:11px; margin-top:3px; }
+
+
+
+/* Year, NPV Simulator & Custom Margin Controls */
+
+.year-bar,.compare-controls,.control-card { background:white; border:1px solid #dce2ea; border-radius:10px; padding:16px; margin-top:14px; box-shadow:0 2px 8px rgba(0,0,0,.05); }
+
+.year-heading { display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:12px; }
+
+.year-heading-left { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+
+.year-heading strong { font-size:17px; }
+
+#playButton {
+
+  padding:7px 13px;
+
+  border:1px solid #2166ac;
+
+  border-radius:6px;
+
+  background:#eef5fc;
+
+  color:#172b4d;
+
+  font-weight:700;
+
+  font-size:13px;
+
+  cursor:pointer;
+
+}
+
+#playButton:hover { background:#dcebfa; }
+
+#playButton.playing { background:#172b4d; color:white; border-color:#172b4d; }
+
+#selectedYear { color:#2166ac; font-weight:800; font-size:20px; }
+
+
+
+.year-buttons { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px; }
+
+.year-button { border:1px solid #cbd5e1; background:#f8fafc; color:#263449; padding:9px 15px; border-radius:7px; font-weight:700; cursor:pointer; font-size:14px; }
+
+.year-button:hover { background:#e8f1fc; }
+
+.year-button.active { background:#172b4d; border-color:#172b4d; color:white; }
+
+#yearSlider { width:100%; cursor:pointer; accent-color:#2166ac; }
+
+.slider-labels { display:flex; justify-content:space-between; color:#667085; font-size:12px; margin-top:5px; }
+
+
+
+.sim-grid {
+
+  display:grid;
+
+  grid-template-columns:1.25fr 1fr;
+
+  gap:14px;
+
+}
+
+.control-card-header {
+
+  display:flex;
+
+  justify-content:space-between;
+
+  align-items:center;
+
+  gap:8px;
+
+  margin-bottom:10px;
+
+  flex-wrap:wrap;
+
+}
+
+.control-card-header strong { font-size:15.5px; }
+
+.mini-btn {
+
+  padding:5px 10px;
+
+  border:1px solid #cbd5e1;
+
+  border-radius:6px;
+
+  background:#f8fafc;
+
+  color:#263449;
+
+  font-weight:700;
+
+  font-size:12px;
+
+  cursor:pointer;
+
+}
+
+.mini-btn:hover { background:#e8f1fc; }
+
+
+
+.npv-status-row {
+
+  display:flex;
+
+  justify-content:space-between;
+
+  align-items:center;
+
+  flex-wrap:wrap;
+
+  gap:8px;
+
+  font-size:13px;
+
+  background:#f8fafc;
+
+  border:1px solid #e2e8f0;
+
+  border-radius:7px;
+
+  padding:8px 11px;
+
+  margin-bottom:10px;
+
+}
+
+.npv-slider-row {
+
+  display:flex;
+
+  align-items:center;
+
+  gap:10px;
+
+}
+
+#npvSlider { flex:1; cursor:pointer; accent-color:#172b4d; }
+
+#npvInput {
+
+  width:78px;
+
+  padding:7px 8px;
+
+  border:1px solid #cbd5e1;
+
+  border-radius:6px;
+
+  font-size:13.5px;
+
+  font-weight:700;
+
+  text-align:center;
+
+}
+
+.npv-quick-btns {
+
+  display:flex;
+
+  gap:6px;
+
+  flex-wrap:wrap;
+
+  margin-top:10px;
+
+}
+
+
+
+.cutoff-inputs {
+
+  display:grid;
+
+  grid-template-columns:repeat(3, 1fr);
+
+  gap:10px;
+
+  margin-top:8px;
+
+}
+
+.cutoff-field label {
+
+  display:block;
+
+  font-size:12px;
+
+  font-weight:700;
+
+  color:#475467;
+
+  margin-bottom:4px;
+
+}
+
+.cutoff-field input {
+
+  width:100%;
+
+  padding:8px;
+
+  border:1px solid #cbd5e1;
+
+  border-radius:6px;
+
+  font-size:14px;
+
+  font-weight:700;
+
+}
+
+.control-hint {
+
+  color:#667085;
+
+  font-size:12px;
+
+  margin-top:8px;
+
+  line-height:1.4;
+
+}
+
+
+
+.compare-controls { display:none; }
+
+.compare-controls p { margin:12px 0; }
+
+.compare-controls select { margin:8px 12px 8px 0; padding:10px; border:1px solid #cbd5e1; border-radius:6px; font-size:14px; background:white; cursor:pointer; }
+
+.compare-select-label { font-weight:bold; display:inline-block; margin-right:5px; }
+
+.compare-description { color:#667085; font-size:13px; margin-top:10px; }
+
+
+
+/* Legends */
+
+.legend { display:flex; gap:20px; flex-wrap:wrap; padding:14px 0 8px; font-size:13px; }
+
+.legend-item, .legend-range { display:flex; align-items:center; gap:6px; }
+
+.swatch { width:15px; height:15px; border-radius:3px; border:1px solid rgba(0,0,0,0.08); }
+
+#resultsLegend { display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
+
+#shiftLegend, #turnoutLegend { display:none; gap:13px; flex-wrap:wrap; align-items:center; }
+
+#status { padding:6px 0; color:#667085; font-size:13px; }
+
+
+
+/* Head-to-Head County Comparison Panel */
+
+.h2h-panel { background:white; border:1px solid #dce2ea; border-radius:10px; padding:16px; margin-top:14px; box-shadow:0 2px 8px rgba(0,0,0,.05); }
+
+.h2h-grid { display:grid; grid-template-columns:1fr 1fr auto; gap:10px; align-items:end; margin-top:10px; }
+
+#h2hCompareBtn { padding:10px 16px; border:1px solid #172b4d; border-radius:6px; background:#172b4d; color:white; font-weight:700; font-size:14px; cursor:pointer; }
+
+#h2hCompareBtn:hover { background:#223e6d; }
+
+#h2hResult { display:none; margin-top:16px; padding-top:14px; border-top:1px solid #e5eaf0; }
+
+.h2h-layout { display:grid; grid-template-columns:1.2fr 1fr; gap:16px; align-items:center; }
+
+.h2h-chart-box { background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:12px; }
+
+.h2h-legend { display:flex; gap:16px; font-size:12.5px; font-weight:700; margin-bottom:8px; flex-wrap:wrap; }
+
+.h2h-dot { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:5px; }
+
+.h2h-table { width:100%; border-collapse:collapse; font-size:13px; }
+
+.h2h-table th, .h2h-table td { padding:8px; border-bottom:1px solid #e5eaf0; text-align:left; }
+
+.h2h-table th { color:#667085; font-weight:700; }
+
+
+
+
+.settings-panel { display:block; background:white; border:1px solid #cbd5e1; border-radius:0 0 10px 10px; padding:15px 16px; margin:0; box-shadow:0 2px 8px rgba(0,0,0,.05); }
+.settings-title { display:block; font-size:16px; margin-bottom:12px; }
+.settings-grid { display:grid; grid-template-columns:repeat(3,minmax(180px,1fr)); gap:14px; align-items:start; }
+.settings-control { min-width:0; }
+.settings-control select { width:100%; max-width:100%; min-height:38px; padding:8px; border:1px solid #cbd5e1; border-radius:6px; background:white; }
+.settings-control select[multiple] { min-height:86px; }
+.settings-check { display:flex !important; align-items:center; gap:8px; font-size:13px !important; margin:7px 0; }
+.settings-check input { width:17px; height:17px; }
+#settingsMarginSlot { grid-column:1 / -1; }
+#settingsMarginSlot .control-card { border:1px solid #e1e7ef; border-radius:8px; padding:12px; background:#f8fafc; }
+@media(max-width:850px){ .settings-grid { grid-template-columns:1fr; } #settingsMarginSlot { grid-column:auto; } }
+
+/* Separate county tools */
+.find-county-panel { background:white; border:1px solid #dce2ea; border-radius:10px; padding:14px 16px; margin:12px 0; box-shadow:0 2px 8px rgba(0,0,0,.05); }
+.find-county-row { display:grid; grid-template-columns:minmax(220px,1fr) auto; gap:10px; align-items:end; margin-top:10px; max-width:760px; }
+.find-county-row label,.settings-panel label { display:block; font-size:13px; font-weight:700; margin-bottom:6px; }
+.find-county-row input { width:100%; padding:11px; border:1px solid #cbd5e1; border-radius:6px; font-size:15px; }
+.settings-details { margin:12px 0; border:1px solid #dce2ea; border-radius:10px; background:white; box-shadow:0 2px 8px rgba(0,0,0,.05); overflow:hidden; }
+.settings-details > summary { cursor:pointer; list-style:none; padding:13px 16px; font-weight:800; color:#172b4d; display:flex; align-items:center; justify-content:space-between; }
+.settings-details > summary::-webkit-details-marker { display:none; }
+.settings-details > summary::after { content:"＋"; font-size:18px; color:#475467; }
+.settings-details[open] > summary::after { content:"−"; }
+.settings-details[open] > summary { border-bottom:1px solid #e2e8f0; background:#f8fafc; }
+.settings-panel select { max-width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:6px; background:white; }
+.autocomplete-hint { color:#667085; font-size:12px; margin-top:5px; }
+
+/* County autocomplete dropdown */
+.county-autocomplete { position:relative; width:100%; }
+.county-suggestions { display:none; position:absolute; top:calc(100% + 3px); left:0; right:0; z-index:20; max-height:260px; overflow-y:auto; background:white; border:1px solid #cbd5e1; border-radius:7px; box-shadow:0 8px 18px rgba(0,0,0,.14); }
+.county-suggestions button { display:block; width:100%; padding:9px 11px; border:0; border-bottom:1px solid #eef2f6; background:white; text-align:left; color:#172033; font-size:13px; cursor:pointer; }
+.county-suggestions button:hover,.county-suggestions button:focus { background:#e8f1fc; outline:none; }
+
+/* Explorer & Rankings */
+
+.explorer-panel { background:white; border:1px solid #dce2ea; border-radius:10px; padding:16px; margin-top:14px; box-shadow:0 2px 8px rgba(0,0,0,.05); }
+
+.explorer-grid { display:grid; grid-template-columns:minmax(180px,1.1fr) minmax(150px,0.85fr) minmax(150px,0.85fr) minmax(175px,1fr) auto; gap:10px; align-items:end; margin-top:12px; }
+
+.explorer-field label { display:block; font-weight:700; font-size:13px; margin-bottom:6px; }
+
+.explorer-field input,.explorer-field select,#countySearchButton { width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:6px; background:white; font-size:14px; }
+
+#countySearchButton { background:#172b4d; color:white; font-weight:700; cursor:pointer; }
+
+#countySearchButton:hover { background:#223e6d; }
+
+#searchMessage { color:#667085; font-size:13px; margin-top:8px; min-height:16px; }
+
+.ranking-heading { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin:18px 0 10px; }
+
+.ranking-heading h2 { margin:0; font-size:18px; }
+
+.ranking-actions { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+
+#rankingCount { color:#667085; font-size:13px; }
+
+.table-wrap { overflow-x:auto; }
+
+#countyRanking { width:100%; border-collapse:collapse; font-size:13px; min-width:640px; }
+
+#countyRanking th,#countyRanking td { padding:10px 9px; border-bottom:1px solid #e5eaf0; text-align:left; white-space:nowrap; }
+
+#countyRanking th { background:#f8fafc; color:#475467; }
+
+#countyRanking tbody tr { cursor:pointer; transition:background 0.15s ease; }
+
+#countyRanking tbody tr:hover { background:#eef5fc; }
+
+.rank-number { color:#667085; }
+
+.party-dem { color:#2166ac; font-weight:700; }
+
+.party-rep { color:#c62828; font-weight:700; }
+
+.streak-pill { display:inline-block; padding:2px 7px; border-radius:99px; font-size:11px; font-weight:700; background:#fef3c7; color:#92400e; }
+
+.streak-pill.swing { background:#e0f2fe; color:#075985; }
+
+.table-note { color:#667085; font-size:12px; margin-top:8px; }
+
+
+
+/* Popup History Chart */
+
+.popup-chart-wrap { margin-top:10px; padding-top:8px; border-top:1px solid #e5eaf0; }
+
+.popup-chart-title { font-size:11px; font-weight:700; color:#667085; margin-bottom:6px; }
+
+.history-chart { display:flex; align-items:stretch; justify-content:space-between; gap:4px; height:74px; padding:2px 0; }
+
+.history-col { flex:1; display:flex; flex-direction:column; align-items:center; }
+
+.history-half-top, .history-half-bottom { width:100%; height:26px; display:flex; justify-content:center; }
+
+.history-half-top { align-items:flex-end; border-bottom:1px solid #cbd5e1; }
+
+.history-half-bottom { align-items:flex-start; }
+
+.history-bar-d { width:75%; background:#2166ac; border-radius:2px 2px 0 0; min-height:2px; }
+
+.history-bar-r { width:75%; background:#c62828; border-radius:0 0 2px 2px; min-height:2px; }
+
+.history-yr { font-size:10px; color:#667085; margin-top:4px; }
+
+.history-yr.active-yr { font-weight:800; color:#101827; text-decoration:underline; }
+
+
+
+#errorBox { display:none; background:#fee2e2; color:#991b1b; padding:12px; margin:12px 20px; border-radius:7px; white-space:pre-wrap; overflow-wrap:anywhere; }
+
+footer { padding:20px; background:#101827; color:#aab4c5; text-align:center; font-size:13px; margin-top:24px; }
+
+
+
+@media(max-width:1050px) {
+
+  .explorer-grid { grid-template-columns:1fr 1fr; }
+
+  .h2h-layout { grid-template-columns:1fr; }
+
+}
+
+@media(max-width:900px) {
+
+  .sim-grid { grid-template-columns:1fr; }
+
+}
+
+@media(max-width:850px) {
+
+  .summary-bar { grid-template-columns:repeat(2, 1fr); }
+
+}
+
+@media(max-width:650px) {
+
+  #map { height:500px; }
+
+  main { padding:12px; }
+
+  .year-button { padding:8px 11px; }
+
+  .compare-controls select { margin-left:0; }
+
+  .summary-bar { grid-template-columns:1fr; }
+
+  .explorer-grid, .h2h-grid, .find-county-row { grid-template-columns:1fr; }
+
+}
