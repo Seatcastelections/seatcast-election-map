@@ -1405,6 +1405,7 @@ function updateMapForYear(year){
 
 
   map.getSource("counties").setData(counties);
+  refreshHoveredCountyTooltip();
 
   if(popupFips&&popupLngLat){
     const refreshedCounty=counties.features.find(feature=>getCountyFips(feature)===popupFips);
