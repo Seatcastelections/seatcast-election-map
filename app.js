@@ -1334,10 +1334,6 @@ function updateMapForYear(year){
 
 
 
-  const nationalOldTotal=Object.values(oldResults).reduce((sum,r)=>sum+(Number(r.total)||((Number(r.dem)||0)+(Number(r.rep)||0))),0);
-  const nationalNewTotal=Object.values(newResults).reduce((sum,r)=>sum+(Number(r.total)||((Number(r.dem)||0)+(Number(r.rep)||0))),0);
-  const nationalTurnoutPct=nationalOldTotal>0&&nationalNewTotal>0?100*(nationalNewTotal-nationalOldTotal)/nationalOldTotal:null;
-
   counties.features.forEach(feature=>{
 
     const fips=getCountyFips(feature);
@@ -1501,6 +1497,10 @@ function updateMapForCompare(){
   const oldResults=resultsByYear[fromYear]||{};
 
   const newResults=resultsByYear[toYear]||{};
+
+  const nationalOldTotal=Object.values(oldResults).reduce((sum,r)=>sum+(Number(r.total)||((Number(r.dem)||0)+(Number(r.rep)||0))),0);
+  const nationalNewTotal=Object.values(newResults).reduce((sum,r)=>sum+(Number(r.total)||((Number(r.dem)||0)+(Number(r.rep)||0))),0);
+  const nationalTurnoutPct=nationalOldTotal>0&&nationalNewTotal>0?100*(nationalNewTotal-nationalOldTotal)/nationalOldTotal:null;
 
 
 
