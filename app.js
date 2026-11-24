@@ -166,6 +166,8 @@ let selectedCountyFips="";
 
 let activePopup=null;
 let refreshingCountyPopup=false;
+let hoveredCountyFips="";
+let lastCountyHoverPoint=null;
 
 let playInterval=null;
 
@@ -609,11 +611,11 @@ function applyMapView(){
   if(map.getLayer("county-outline")){
     map.setPaintProperty("county-outline","line-color","#111827");
     map.setPaintProperty("county-outline","line-opacity",selectedStateFips
-      ?["case",["==",["get","stateFips"],selectedStateFips],0.98,0.16]
-      :0.72);
+      ?["case",["==",["get","stateFips"],selectedStateFips],0.98,0.10]
+      :0.34);
     map.setPaintProperty("county-outline","line-width",selectedStateFips
-      ?["case",["==",["get","stateFips"],selectedStateFips],["interpolate",["linear"],["zoom"],3,0.8,6,1.35,9,1.9],0.25]
-      :["interpolate",["linear"],["zoom"],3,0.22,6,0.42,9,0.62]);
+      ?["case",["==",["get","stateFips"],selectedStateFips],["interpolate",["linear"],["zoom"],3,1.0,6,1.55,9,2.0],0.18]
+      :["interpolate",["linear"],["zoom"],3,0.14,6,0.25,9,0.38]);
   }
   if(map.getLayer("state-outline")){
     map.setPaintProperty("state-outline","line-width",selectedStateFips
@@ -1332,6 +1334,10 @@ function updateMapForYear(year){
 
 
 
+  const nationalOldTotal=Object.values(oldResults).reduce((sum,r)=>sum+(Number(r.total)||((Number(r.dem)||0)+(Number(r.rep)||0))),0);
+  const nationalNewTotal=Object.values(newResults).reduce((sum,r)=>sum+(Number(r.total)||((Number(r.dem)||0)+(Number(r.rep)||0))),0);
+  const nationalTurnoutPct=nationalOldTotal>0&&nationalNewTotal>0?100*(nationalNewTotal-nationalOldTotal)/nationalOldTotal:null;
+
   counties.features.forEach(feature=>{
 
     const fips=getCountyFips(feature);
@@ -1441,7 +1447,12 @@ function updateStateViewCompareColors(fromYear,toYear){
 
       if(mapMode==="shift"&&t.oldTwo>0&&t.newTwo>0){const oldD=Object.entries(oldData).filter(([f])=>f.startsWith(st)).reduce((a,[,r])=>a+(Number(r.dem)||0),0); const oldR=t.oldTwo-oldD; const newD=Object.entries(newData).filter(([f])=>f.startsWith(st)).reduce((a,[,r])=>a+(Number(r.dem)||0),0); const newR=t.newTwo-newD; value=100*(newD-newR)/t.newTwo-100*(oldD-oldR)/t.oldTwo; color=getShiftColor(value);}
 
-      else if(mapMode==="turnout"&&t.old>0&&t.now>0){value=100*(t.now-t.old)/t.old;color=getTurnoutColor(value);}
+      else if(mapMode==="turnout"&&t.old>0&&t.now>0){
+        const nationalOld=Object.values(oldData).reduce((sum,r)=>sum+(Number(r.total)||((Number(r.dem)||0)+(Number(r.rep)||0))),0);
+        const nationalNow=Object.values(newData).reduce((sum,r)=>sum+(Number(r.total)||((Number(r.dem)||0)+(Number(r.rep)||0))),0);
+        const nationalGrowth=nationalOld>0?100*(nationalNow-nationalOld)/nationalOld:0;
+        value=100*(t.now-t.old)/t.old-nationalGrowth;color=getTurnoutColor(value);
+      }
 
     }
 
@@ -1456,6 +1467,29 @@ function updateStateViewCompareColors(fromYear,toYear){
 function getShiftColor(s){if(Math.abs(s)<1)return "#d1d5db";if(s>=1&&s<3)return "#b3d4f0";if(s>=3&&s<6)return "#5b9bd5";if(s>=6)return "#145a96";if(s<=-1&&s>-3)return "#f2b8b5";if(s<=-3&&s>-6)return "#e47770";return "#a91e27";}
 
 
+
+function refreshHoveredCountyTooltip(){
+  if(!hoveredCountyFips||!lastCountyHoverPoint||!counties) return;
+  const feature=counties.features.find(f=>getCountyFips(f)===hoveredCountyFips);
+  if(!feature) return;
+  const p=feature.properties||{}, stateDisplay=p.stateFullName||p.state||"";
+  const title=(p.countyName||"County")+(stateDisplay?", "+(p.state||stateDisplay):"");
+  let statHtml='<div class="tt-stat tt-neutral">No data</div>';
+  if(mapMode==="turnout"&&p.turnoutAvailable){
+    const pct=Number(p.turnoutPct), rel=Number(p.relativeTurnoutPct);
+    statHtml=`<div class="tt-stat tt-green">${p.fromYear}→${p.toYear}: ${pct>=0?"+":""}${pct.toFixed(2)}% ballots</div>`;
+    if(Number.isFinite(rel)) statHtml+=`<div class="tt-stat tt-neutral">Turnout growth vs. nation: ${rel>=0?"+":""}${rel.toFixed(2)} percentage points</div>`;
+  }else if(mapMode==="shift"&&p.shiftAvailable){
+    statHtml=`<div class="tt-stat tt-neutral">${p.fromYear}→${p.toYear}: ${fmtMarginStr(p.shift)} shift</div>`;
+  }else if(mapMode==="results"&&p.margin!==null&&p.margin!==undefined){
+    statHtml=`<div class="tt-stat tt-neutral">${currentYear}: ${fmtMarginStr(p.margin)}</div>`;
+  }
+  hoverTooltip.innerHTML=`<div class="tt-title">${esc(title)}</div>${statHtml}<div class="tt-hint">Click for county details & history</div>`;
+  hoverTooltip.style.display="block";
+  const q=lastCountyHoverPoint,rect=map.getContainer().getBoundingClientRect();
+  let left=q.x+14,top=q.y+14;if(left+245>rect.width)left=q.x-245;if(top+95>rect.height)top=q.y-95;
+  hoverTooltip.style.left=Math.max(8,left)+"px";hoverTooltip.style.top=Math.max(8,top)+"px";
+}
 
 function updateMapForCompare(){
 
@@ -1510,6 +1544,8 @@ function updateMapForCompare(){
     p.relativeShiftAvailable=false;
 
     p.turnoutPct=null;
+    p.relativeTurnoutPct=null;
+    p.nationalTurnoutPct=nationalTurnoutPct;
 
     p.turnoutDiff=null;
 
@@ -1596,6 +1632,7 @@ function updateMapForCompare(){
       p.turnoutDiff=newTot-oldTot;
 
       p.turnoutPct=100*(newTot-oldTot)/oldTot;
+      if(Number.isFinite(nationalTurnoutPct)) p.relativeTurnoutPct=p.turnoutPct-nationalTurnoutPct;
 
       p.turnoutAvailable=true;
 
@@ -1617,7 +1654,7 @@ function updateMapForCompare(){
 
     }else if(mapMode==="turnout"){
 
-      p.fillColor=p.turnoutAvailable?getTurnoutColor(p.turnoutPct):"#e5e7eb";
+      p.fillColor=p.turnoutAvailable?getTurnoutColor(p.relativeTurnoutPct):"#e5e7eb";
 
     }
 
@@ -1628,6 +1665,7 @@ function updateMapForCompare(){
   map.getSource("counties").setData(counties);
 
   updateStateViewCompareColors(fromYear,toYear);
+  refreshHoveredCountyTooltip();
 
   updateElectoralCollege();
 
@@ -1929,6 +1967,7 @@ function openCountyDetailsPopup(p,lngLat){
       <div style="color:#667085;margin:4px 0 8px">Turnout: ${p.fromYear} to ${p.toYear}</div>
 
       <div>Change: <strong>${pct>=0?"+":""}${pct.toFixed(2)}%</strong> (${diff>=0?"+":""}${diff.toLocaleString()} votes)</div>
+      ${Number.isFinite(Number(p.relativeTurnoutPct))?`<div>Nationwide turnout growth: ${Number(p.nationalTurnoutPct)>=0?"+":""}${Number(p.nationalTurnoutPct).toFixed(2)}%</div><div>Compared with nation: <strong>${Number(p.relativeTurnoutPct)>=0?"+":""}${Number(p.relativeTurnoutPct).toFixed(2)} percentage points</strong></div>`:""}
 
       <hr style="border:none;border-top:1px solid #e5eaf0;margin:8px 0">
 
@@ -3129,6 +3168,8 @@ map.on("load",async()=>{
     map.on("mousemove","state-fill",event=>{
 
       map.getCanvas().style.cursor="pointer";
+      lastCountyHoverPoint=event.point;
+      hoveredCountyFips=event.features[0].properties.mapFips||"";
 
       const p=event.features[0].properties;
 
