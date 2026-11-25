@@ -603,13 +603,13 @@ function applyMapView(){
       :0.92);
   }
   if(map.getLayer("county-outline")){
-    map.setPaintProperty("county-outline","line-color","#111827");
+    map.setPaintProperty("county-outline","line-color",selectedStateFips?"#000000":"#64748b");
     map.setPaintProperty("county-outline","line-opacity",selectedStateFips
-      ?["case",["==",["get","stateFips"],selectedStateFips],1.0,0.035]
-      :0.055);
+      ?["case",["==",["get","stateFips"],selectedStateFips],1.0,0.025]
+      :0.30);
     map.setPaintProperty("county-outline","line-width",selectedStateFips
-      ?["case",["==",["get","stateFips"],selectedStateFips],["interpolate",["linear"],["zoom"],3,1.6,6,2.3,9,3.0],0.08]
-      :["interpolate",["linear"],["zoom"],3,0.035,6,0.075,9,0.12]);
+      ?["case",["==",["get","stateFips"],selectedStateFips],["interpolate",["linear"],["zoom"],3,1.6,6,2.3,9,3.0],0.06]
+      :["interpolate",["linear"],["zoom"],3,0.06,6,0.10,9,0.16]);
   }
   if(map.getLayer("state-outline")){
     map.setPaintProperty("state-outline","line-width",selectedStateFips
@@ -796,8 +796,6 @@ function resetToBigMap(){
 }
 
 resetMapButton.addEventListener("click",resetToBigMap);
-
-document.getElementById("jumpLower48").addEventListener("click",()=>setMapRegion("lower48"));
 
 document.getElementById("jumpAlaska").addEventListener("click",()=>setMapRegion("ak"));
 
@@ -1751,6 +1749,8 @@ function zoomToState(stateFeature){
 
 
   if(stateFips==="15"){
+    // Hawaii is a separate map region: filter every map layer to Hawaii and
+    // move the camera/constraints there before revealing county boundaries.
     mapRegion="hi";
     const hiBounds=[[-160.6,18.8],[-154.5,22.5]];
     const hiCamera=map.cameraForBounds(hiBounds,{padding:45});
@@ -1759,6 +1759,16 @@ function zoomToState(stateFeature){
     const hiFilter=["==",["get","stateFips"],"15"];
     ["state-fill","county-fill","county-outline","streak-outline","hover-outline","selected-outline"].forEach(id=>{
       if(map.getLayer(id)) map.setFilter(id,hiFilter);
+    });
+    applyStreakMapHighlight();
+  }else{
+    // Leaving Hawaii restores the continental map's filters and camera limits.
+    mapRegion="lower48";
+    map.setMinZoom(LOWER48_MIN_ZOOM);
+    map.setMaxBounds([[-130,20],[-60,55]]);
+    const lowerFilter=["in",["get","stateFips"],["literal",["01","04","05","06","08","09","10","11","12","13","16","17","18","19","20","21","22","23","24","25","26","27","28","29","30","31","32","33","34","35","36","37","38","39","40","41","42","44","45","46","47","48","49","50","51","53","54","55","56"]]];
+    ["state-fill","county-fill","county-outline","streak-outline","hover-outline","selected-outline"].forEach(id=>{
+      if(map.getLayer(id)) map.setFilter(id,lowerFilter);
     });
     applyStreakMapHighlight();
   }
