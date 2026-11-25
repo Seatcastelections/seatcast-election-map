@@ -166,6 +166,7 @@ let selectedCountyFips="";
 
 let activePopup=null;
 let refreshingCountyPopup=false;
+let lastOutlinedCountyFips="";
 let hoveredCountyFips="";
 let lastCountyHoverPoint=null;
 
@@ -253,23 +254,15 @@ function getResultsColor(margin,winner){
 
   const [c1,c2,c3]=getMarginCutoffs();
 
-  if(margin>c3) return "#084594";
-
-  if(margin>c2) return "#2171b5";
-
-  if(margin>c1) return "#6baed6";
-
-  if(margin>0) return "#bdd7e7";
-
+  if(margin>c3) return "#08306b";
+  if(margin>c2) return "#1764a0";
+  if(margin>c1) return "#4f9acb";
+  if(margin>0) return "#a6cee3";
   if(margin===0) return "#d1d5db";
-
-  if(margin>=-c1) return "#fcae91";
-
-  if(margin>=-c2) return "#fb6a4a";
-
-  if(margin>=-c3) return "#de2d26";
-
-  return "#a50f15";
+  if(margin>=-c1) return "#f4a582";
+  if(margin>=-c2) return "#e65b4f";
+  if(margin>=-c3) return "#c51b29";
+  return "#7f0000";
 
 }
 
@@ -594,6 +587,7 @@ function setMapRegion(region){
 
   else if(region==="hi"&&statesByFips["15"]) map.fitBounds(featureBounds(statesByFips["15"]),{padding:45,maxZoom:7,duration:700});
 
+  map.once("moveend",applyMapView);
   applyMapView(); updateResetButtonVisibility(); updateSummaryBar(); refreshCountyExplorer(); syncUrlHash();
 
 }
@@ -611,11 +605,11 @@ function applyMapView(){
   if(map.getLayer("county-outline")){
     map.setPaintProperty("county-outline","line-color","#111827");
     map.setPaintProperty("county-outline","line-opacity",selectedStateFips
-      ?["case",["==",["get","stateFips"],selectedStateFips],1.0,0.06]
-      :0.13);
+      ?["case",["==",["get","stateFips"],selectedStateFips],1.0,0.035]
+      :0.055);
     map.setPaintProperty("county-outline","line-width",selectedStateFips
-      ?["case",["==",["get","stateFips"],selectedStateFips],["interpolate",["linear"],["zoom"],3,1.35,6,1.9,9,2.5],0.12]
-      :["interpolate",["linear"],["zoom"],3,0.08,6,0.14,9,0.22]);
+      ?["case",["==",["get","stateFips"],selectedStateFips],["interpolate",["linear"],["zoom"],3,1.6,6,2.3,9,3.0],0.08]
+      :["interpolate",["linear"],["zoom"],3,0.035,6,0.075,9,0.12]);
   }
   if(map.getLayer("state-outline")){
     map.setPaintProperty("state-outline","line-width",selectedStateFips
@@ -655,6 +649,8 @@ function setMapView(view){
 
   map.flyTo({center:DEFAULT_CENTER,zoom:LOWER48_MIN_ZOOM,duration:700});
 
+  
+  map.once("moveend",applyMapView);
   updateResetButtonVisibility(); updateSummaryBar(); refreshCountyExplorer(); syncUrlHash();
 
 }
@@ -3213,7 +3209,10 @@ map.on("load",async()=>{
       const stateDisplay=p.stateFullName||p.state||"";
 
       if(selectedStateFips&&p.stateFips!==selectedStateFips){
-        map.setFilter("hover-outline",["==","mapFips",""]);
+        if(lastOutlinedCountyFips!==""){
+          map.setFilter("hover-outline",["==","mapFips",""]);
+          lastOutlinedCountyFips="";
+        }
         hoverTooltip.innerHTML=`<div class="tt-title">${esc(stateDisplay||"Another state")}</div><div class="tt-hint">Click to zoom into ${esc(stateDisplay||"this state")}</div>`;
         hoverTooltip.style.display="block";
         const mapRect=map.getContainer().getBoundingClientRect();
@@ -3225,8 +3224,11 @@ map.on("load",async()=>{
         return;
       }
 
-      map.setFilter("hover-outline",["==","mapFips",p.mapFips||""]);
-
+      const currentHoverFips=p.mapFips||"";
+      if(currentHoverFips!==lastOutlinedCountyFips){
+        map.setFilter("hover-outline",["==","mapFips",currentHoverFips]);
+        lastOutlinedCountyFips=currentHoverFips;
+      }
       const title=(p.countyName||"County")+(stateDisplay?", "+(p.state||stateDisplay):"");
 
       let statHtml=`<div class="tt-stat tt-neutral">No data</div>`;
@@ -3336,11 +3338,13 @@ map.on("load",async()=>{
 
       hoverTooltip.style.display="none";
 
-      map.setFilter("hover-outline",["==","mapFips",""]);
-
+      if(lastOutlinedCountyFips){
+        map.setFilter("hover-outline",["==","mapFips",""]);
+        lastOutlinedCountyFips="";
+      }
+      hoveredCountyFips="";
+      lastCountyHoverPoint=null;
     });
-
-
 
     // Click handler
 
