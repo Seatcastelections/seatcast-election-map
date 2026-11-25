@@ -603,13 +603,21 @@ function applyMapView(){
       :0.92);
   }
   if(map.getLayer("county-outline")){
-    map.setPaintProperty("county-outline","line-color",selectedStateFips?"#000000":"#64748b");
-    map.setPaintProperty("county-outline","line-opacity",selectedStateFips
-      ?["case",["==",["get","stateFips"],selectedStateFips],1.0,0.025]
-      :0.30);
-    map.setPaintProperty("county-outline","line-width",selectedStateFips
-      ?["case",["==",["get","stateFips"],selectedStateFips],["interpolate",["linear"],["zoom"],3,1.6,6,2.3,9,3.0],0.06]
-      :["interpolate",["linear"],["zoom"],3,0.06,6,0.10,9,0.16]);
+    // Hard rule: national county view is gray only. In a state detail view,
+    // only the selected state's county boundaries are drawn, in black.
+    if(selectedStateFips){
+      map.setPaintProperty("county-outline","line-color","#000000");
+      map.setPaintProperty("county-outline","line-opacity",
+        ["case",["==",["get","stateFips"],selectedStateFips],1,0]);
+      map.setPaintProperty("county-outline","line-width",
+        ["case",["==",["get","stateFips"],selectedStateFips],
+          ["interpolate",["linear"],["zoom"],3,1.6,6,2.3,9,3.0],0]);
+    }else{
+      map.setPaintProperty("county-outline","line-color","#94a3b8");
+      map.setPaintProperty("county-outline","line-opacity",0.45);
+      map.setPaintProperty("county-outline","line-width",
+        ["interpolate",["linear"],["zoom"],3,0.08,6,0.12,9,0.18]);
+    }
   }
   if(map.getLayer("state-outline")){
     map.setPaintProperty("state-outline","line-width",selectedStateFips
@@ -3092,7 +3100,7 @@ map.on("load",async()=>{
 
       id:"county-outline",type:"line",source:"counties",
 
-      paint:{"line-color":"#000000","line-width":["interpolate",["linear"],["zoom"],3,0.22,6,0.42,9,0.62],"line-opacity":0.72}
+      paint:{"line-color":"#94a3b8","line-width":["interpolate",["linear"],["zoom"],3,0.08,6,0.12,9,0.18],"line-opacity":0.45}
 
     });
 
